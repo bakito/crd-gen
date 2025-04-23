@@ -50,7 +50,7 @@ func main() {
 		excludes = append(excludes, regexp.MustCompile(excludeFlag))
 	}
 
-	tmp, err := os.MkdirTemp("", "extract-crd-api"
+	tmp, err := os.MkdirTemp("", "extract-crd-api")
 	if err != nil {
 		slog.Error("Failed to create a temp dir", "error", err)
 		return
