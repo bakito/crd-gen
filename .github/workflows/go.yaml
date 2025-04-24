@@ -33,6 +33,6 @@ jobs:
         with:
           go-version-file: "go.mod"
       - name: Test
-        run: make test
+        run: make test-ci
       - name: Generate
         run: make generate

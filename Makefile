@@ -9,7 +9,9 @@ tidy:
 	go mod tidy
 
 # Run tests
-test: tidy lint
+test: tidy lint test-ci
+
+test-ci:
 	go test ./... -coverprofile=coverage.out
 
 generate:
