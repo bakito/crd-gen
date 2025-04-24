@@ -45,6 +45,19 @@ func main() {
 	flag.BoolVar(&useGit, "use-git", false, "Use git instead of go mod (of module is not proper versioned)")
 	flag.Parse()
 
+	if strings.TrimSpace(module) == "" {
+		slog.Error("Flag must be defined", "flag", "module")
+		return
+	}
+	if strings.TrimSpace(path) == "" {
+		slog.Error("Flag must be defined", "flag", "path")
+		return
+	}
+	if strings.TrimSpace(target) == "" {
+		slog.Error("Flag must be defined", "flag", "target")
+		return
+	}
+
 	var excludes []*regexp.Regexp
 	for _, excludeFlag := range excludeFlags {
 		excludes = append(excludes, regexp.MustCompile(excludeFlag))
