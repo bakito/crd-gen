@@ -1,139 +1,265 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"log"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"unicode"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"gopkg.in/yaml.v3"
 )
 
-type StructField struct {
-	Name     string `json:"name"`
-	JSONName string `json:"json-name"`
-	Type     string `json:"type"`
-	Comment  string `json:"comment,omitempty"`
+// SchemaProperty represents a property in an OpenAPI schema
+type SchemaProperty struct {
+	Type        interface{}            `yaml:"type"`
+	Format      string                 `yaml:"format,omitempty"`
+	Description string                 `yaml:"description,omitempty"`
+	Properties  map[string]interface{} `yaml:"properties,omitempty"`
+	Items       map[string]interface{} `yaml:"items,omitempty"`
+	Ref         string                 `yaml:"$ref,omitempty"`
 }
 
+// StructDef represents a Go struct definition
 type StructDef struct {
-	Name   string
-	Fields []StructField
+	Name        string
+	Fields      []FieldDef
+	Description string
 }
 
-func main() {
-	// Load CRD YAML file
-	crdData, err := os.ReadFile("mycrd.yaml")
-	if err != nil {
-		log.Fatalf("Failed to read CRD file: %v", err)
-	}
-
-	var crd map[string]interface{}
-	if err := yaml.Unmarshal(crdData, &crd); err != nil {
-		log.Fatalf("Failed to unmarshal CRD YAML: %v", err)
-	}
-
-	// Extract openAPIV3Schema from CRD
-	versions := crd["spec"].(map[string]interface{})["versions"].([]interface{})
-	version := versions[0].(map[string]interface{})
-	schema := version["schema"].(map[string]interface{})
-	openAPIV3Schema := schema["openAPIV3Schema"]
-
-	jsonData, err := json.Marshal(openAPIV3Schema)
-	if err != nil {
-		log.Fatalf("Failed to marshal schema to JSON: %v", err)
-	}
-
-	schemaRef := &openapi3.SchemaRef{}
-	if err := json.Unmarshal(jsonData, schemaRef); err != nil {
-		log.Fatalf("Failed to parse schema: %v", err)
-	}
-
-	if err := schemaRef.Validate(context.Background()); err != nil {
-		log.Fatalf("Schema validation failed: %v", err)
-	}
-
-	// Flattened struct extraction
-	structDef := extractFlatStruct("Spec", schemaRef)
-
-	// Print Go struct
-	b, _ := json.Marshal(structDef)
-	fmt.Println(string(b))
+// FieldDef represents a field in a Go struct
+type FieldDef struct {
+	Name        string
+	Type        string
+	JsonTag     string
+	Description string
 }
 
-func extractFlatStruct(name string, schema *openapi3.SchemaRef) StructDef {
-	def := StructDef{Name: name}
+// Helper function to convert string to CamelCase
+func toCamelCase(s string) string {
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	})
 
-	for propName, propSchema := range schema.Value.Properties {
-		goField := toCamelCase(propName)
-		fieldType := resolveType(propSchema)
-
-		typ := getFirstType(propSchema.Value)
-
-		if typ == "object" && len(propSchema.Value.Properties) > 0 {
-			for nestedName, nestedProp := range propSchema.Value.Properties {
-				nestedField := toCamelCase(propName + "_" + nestedName)
-				nestedType := resolveType(nestedProp)
-				def.Fields = append(def.Fields, StructField{
-					Name:     nestedField,
-					JSONName: fmt.Sprintf("%s.%s", propName, nestedName),
-					Type:     nestedType,
-				})
-			}
-		} else {
-			def.Fields = append(def.Fields, StructField{
-				Name:     goField,
-				JSONName: propName,
-				Type:     fieldType,
-			})
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
 		}
 	}
 
-	return def
+	return strings.Join(words, "")
 }
 
-func resolveType(ref *openapi3.SchemaRef) string {
-	if ref == nil || ref.Value == nil {
-		return "interface{}"
-	}
+// Helper function to map OpenAPI types to Go types
+func mapType(prop v1.JSONSchemaProps) string {
 
-	schema := ref.Value
-	typ := getFirstType(schema)
-
-	switch typ {
+	switch prop.Type {
 	case "string":
+		switch prop.Format {
+		case "date-time":
+			return "time.Time"
+		case "byte", "binary":
+			return "[]byte"
+		}
+	default:
+
 		return "string"
-	case "integer":
-		return "int"
-	case "number":
-		return "float64"
+	case "integer", "number":
+		switch prop.Format {
+		case "int32":
+			return "int32"
+		case "int64":
+			return "int64"
+		case "float":
+			return "float32"
+		case "double":
+			return "float64"
+		default:
+			if prop.Type == "integer" {
+				return "int64"
+			}
+			return "float64"
+		}
+
 	case "boolean":
 		return "bool"
 	case "array":
-		return "[]" + resolveType(schema.Items)
+		itemType := mapType(*prop.Items.Schema)
+		return "[]" + itemType
 	case "object":
-		return "struct"
-	default:
-		return "interface{}"
+		// For objects, we create a reference to another struct
+		return "interface{}" // Will be replaced with struct reference later
+	}
+	return "interface{}"
+}
+
+// Extract schemas from CRD
+func extractSchemas(crd apiextensions.CustomResourceDefinition) (*v1.JSONSchemaProps, string) {
+	var schema *v1.JSONSchemaProps
+	var version string
+
+	// Try to get schema from new CRD format first (v1)
+	if len(crd.Spec.Versions) > 0 {
+		for _, v := range crd.Spec.Versions {
+			if v.Storage {
+				//schema = v.Schema.OpenAPIV3Schema
+				version = v.Name
+				break
+			}
+		}
+	}
+
+	return schema, version
+}
+
+// Process schema and generate structs
+func generateStructs(schema *v1.JSONSchemaProps, name string, structMap map[string]*StructDef, path string) {
+	props := schema.Properties
+
+	structDef := &StructDef{
+		Name:        name,
+		Description: fmt.Sprintf("%s represents a %s", name, path),
+	}
+	structMap[name] = structDef
+
+	for propName, propValue := range props {
+
+		fieldName := toCamelCase(propName)
+		var fieldType string
+		description := ""
+
+		description = propValue.Description
+
+		fieldType = mapType(propValue)
+
+		// Handle nested objects by creating a new struct
+		if propValue.Type == "object" {
+			if len(propValue.Properties) > 0 {
+				nestedName := name + fieldName
+				fieldType = nestedName
+				generateStructs(&propValue, nestedName, structMap, path+"."+propName)
+			}
+		}
+
+		field := FieldDef{
+			Name:        fieldName,
+			Type:        fieldType,
+			JsonTag:     propName,
+			Description: description,
+		}
+
+		structDef.Fields = append(structDef.Fields, field)
 	}
 }
 
-func getFirstType(schema *openapi3.Schema) string {
-	if schema.Type != nil && len(*schema.Type) > 0 {
-		return (*schema.Type)[0]
+// Generate Go code from struct definitions
+func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGroup, crdVersion string) string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("// Code generated by crd-parser. DO NOT EDIT.\n\n"))
+	sb.WriteString(fmt.Sprintf("package %s\n\n", packageName))
+
+	// Add imports
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"time\"\n")
+	sb.WriteString(")\n\n")
+
+	// Add comment header
+	sb.WriteString(fmt.Sprintf("// Generated from %s.%s/%s CRD\n\n", crdKind, crdGroup, crdVersion))
+
+	// Sort and generate structs
+	for _, structDef := range structMap {
+		// Add struct comment
+		if structDef.Description != "" {
+			sb.WriteString(fmt.Sprintf("// %s\n", structDef.Description))
+		}
+
+		// Start struct definition
+		sb.WriteString(fmt.Sprintf("type %s struct {\n", structDef.Name))
+
+		// Add fields
+		for _, field := range structDef.Fields {
+			if field.Description != "" {
+				sb.WriteString(fmt.Sprintf("\t// %s\n", strings.ReplaceAll(field.Description, "\\n", "\\t ")))
+			}
+			sb.WriteString(fmt.Sprintf("\t%s %s `json:\"%s,omitempty\"`\n", field.Name, field.Type, field.JsonTag))
+		}
+
+		// Close struct definition
+		sb.WriteString("}\n\n")
 	}
-	return ""
+
+	return sb.String()
 }
 
-func toCamelCase(input string) string {
-	parts := strings.FieldsFunc(input, func(r rune) bool {
-		return r == '_' || r == '-' || r == '.'
-	})
-	for i := range parts {
-		parts[i] = strings.Title(parts[i])
+// Extract package name from a path
+func getPackageName(filePath string) string {
+	baseName := filepath.Base(filePath)
+	ext := filepath.Ext(baseName)
+	name := strings.TrimSuffix(baseName, ext)
+
+	// Clean up the name to be a valid Go package name
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	name = reg.ReplaceAllString(name, "")
+
+	// Ensure it starts with a letter
+	if len(name) == 0 || !unicode.IsLetter(rune(name[0])) {
+		name = "crd" + name
 	}
-	return strings.Join(parts, "")
+
+	return strings.ToLower(name)
+}
+
+func main() {
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: crd-parser <crd-yaml-file> <output-go-file>")
+		os.Exit(1)
+	}
+
+	inputFile := os.Args[1]
+	outputFile := os.Args[2]
+
+	// Read input file
+	data, err := os.ReadFile(inputFile)
+	if err != nil {
+		log.Fatalf("Error reading file: %v", err)
+	}
+
+	// Parse CRD YAML
+	var crd apiextensions.CustomResourceDefinition
+	err = yaml.Unmarshal(data, &crd)
+	if err != nil {
+		log.Fatalf("Error parsing YAML: %v", err)
+	}
+
+	// Extract schema
+	schema, version := extractSchemas(crd)
+	if schema == nil {
+		log.Fatalf("Could not find OpenAPI schema in CRD")
+	}
+
+	// Extract CRD info
+	crdKind := crd.Spec.Names.Kind
+	crdGroup := crd.Spec.Group
+
+	// Generate structs
+	structMap := make(map[string]*StructDef)
+	rootName := crdKind
+	generateStructs(schema, rootName, structMap, crdKind)
+
+	// Generate Go code
+	packageName := getPackageName(outputFile)
+	goCode := generateGoCode(structMap, packageName, crdKind, crdGroup, version)
+
+	// Write output file
+	err = os.WriteFile(outputFile, []byte(goCode), 0644)
+	if err != nil {
+		log.Fatalf("Error writing output file: %v", err)
+	}
+
+	fmt.Printf("Successfully generated Go structs from %s CRD to %s\n", crdKind, outputFile)
 }
