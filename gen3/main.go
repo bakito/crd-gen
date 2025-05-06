@@ -6,90 +6,102 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"gopkg.in/yaml.v3"
 )
 
+type StructField struct {
+	Name     string `json:"name"`
+	JSONName string `json:"json-name"`
+	Type     string `json:"type"`
+	Comment  string `json:"comment,omitempty"`
+}
+
+type StructDef struct {
+	Name   string
+	Fields []StructField
+}
+
 func main() {
+	// Load CRD YAML file
 	crdData, err := os.ReadFile("mycrd.yaml")
 	if err != nil {
 		log.Fatalf("Failed to read CRD file: %v", err)
 	}
 
-	var crd map[string]any
+	var crd map[string]interface{}
 	if err := yaml.Unmarshal(crdData, &crd); err != nil {
 		log.Fatalf("Failed to unmarshal CRD YAML: %v", err)
 	}
 
-	// Extract openAPIV3Schema
-	versions := crd["spec"].(map[string]any)["versions"].([]any)
-	version := versions[0].(map[string]any)
-	schema := version["schema"].(map[string]any)
+	// Extract openAPIV3Schema from CRD
+	versions := crd["spec"].(map[string]interface{})["versions"].([]interface{})
+	version := versions[0].(map[string]interface{})
+	schema := version["schema"].(map[string]interface{})
 	openAPIV3Schema := schema["openAPIV3Schema"]
-
-	names := crd["spec"].(map[string]any)["names"].(map[string]any)
-	kind := names["kind"].(string)
-	//listKind := names["kind"].(string)
 
 	jsonData, err := json.Marshal(openAPIV3Schema)
 	if err != nil {
-		log.Fatalf("Failed to marshal openAPIV3Schema to JSON: %v", err)
+		log.Fatalf("Failed to marshal schema to JSON: %v", err)
 	}
 
 	schemaRef := &openapi3.SchemaRef{}
 	if err := json.Unmarshal(jsonData, schemaRef); err != nil {
-		log.Fatalf("Failed to parse JSON into SchemaRef: %v", err)
+		log.Fatalf("Failed to parse schema: %v", err)
 	}
 
 	if err := schemaRef.Validate(context.Background()); err != nil {
-		log.Fatalf("Schema validation error: %v", err)
+		log.Fatalf("Schema validation failed: %v", err)
 	}
 
-	fmt.Print("package main\n// Auto-generated Go structs from openAPIV3Schema\n\n")
-	generateStruct(kind, schemaRef.Value, 0, make(map[string]bool))
+	// Flattened struct extraction
+	structDef := extractFlatStruct("Spec", schemaRef)
+
+	// Print Go struct
+	b, _ := json.Marshal(structDef)
+	fmt.Println(string(b))
 }
 
-// Recursively generates structs
-func generateStruct(name string, schema *openapi3.Schema, depth int, generated map[string]bool) {
-	if generated[name] {
-		return
+func extractFlatStruct(name string, schema *openapi3.SchemaRef) StructDef {
+	def := StructDef{Name: name}
+
+	for propName, propSchema := range schema.Value.Properties {
+		goField := toCamelCase(propName)
+		fieldType := resolveType(propSchema)
+
+		typ := getFirstType(propSchema.Value)
+
+		if typ == "object" && len(propSchema.Value.Properties) > 0 {
+			for nestedName, nestedProp := range propSchema.Value.Properties {
+				nestedField := toCamelCase(propName + "_" + nestedName)
+				nestedType := resolveType(nestedProp)
+				def.Fields = append(def.Fields, StructField{
+					Name:     nestedField,
+					JSONName: fmt.Sprintf("%s.%s", propName, nestedName),
+					Type:     nestedType,
+				})
+			}
+		} else {
+			def.Fields = append(def.Fields, StructField{
+				Name:     goField,
+				JSONName: propName,
+				Type:     fieldType,
+			})
+		}
 	}
-	generated[name] = true
 
-	fmt.Printf("type %s struct {\n", name)
-
-	keys := make([]string, 0, len(schema.Properties))
-	for k := range schema.Properties {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, propName := range keys {
-		prop := schema.Properties[propName]
-		fieldName := toCamelCase(propName)
-		fieldType := mapType(prop, propName, depth+1, generated)
-		fmt.Printf("    %s %s `json:\"%s,omitempty\"`\n", fieldName, fieldType, propName)
-	}
-
-	fmt.Println("}")
-	fmt.Println()
+	return def
 }
 
-func mapType(ref *openapi3.SchemaRef, propName string, depth int, generated map[string]bool) string {
+func resolveType(ref *openapi3.SchemaRef) string {
 	if ref == nil || ref.Value == nil {
-		return "any"
+		return "interface{}"
 	}
 
 	schema := ref.Value
-
-	typ := "object"
-	types := *schema.Type
-	if len(types) > 0 {
-		typ = types[0]
-	}
+	typ := getFirstType(schema)
 
 	switch typ {
 	case "string":
@@ -101,20 +113,21 @@ func mapType(ref *openapi3.SchemaRef, propName string, depth int, generated map[
 	case "boolean":
 		return "bool"
 	case "array":
-		return "[]" + mapType(schema.Items, propName, depth, generated)
+		return "[]" + resolveType(schema.Items)
 	case "object":
-		if len(schema.Properties) > 0 {
-			nestedName := toCamelCase(propName)
-			generateStruct(nestedName, schema, depth, generated)
-			return nestedName
-		}
-		return "map[string]any"
+		return "struct"
 	default:
-		return "any"
+		return "interface{}"
 	}
 }
 
-// Converts snake_case or kebab-case to CamelCase
+func getFirstType(schema *openapi3.Schema) string {
+	if schema.Type != nil && len(*schema.Type) > 0 {
+		return (*schema.Type)[0]
+	}
+	return ""
+}
+
 func toCamelCase(input string) string {
 	parts := strings.FieldsFunc(input, func(r rune) bool {
 		return r == '_' || r == '-' || r == '.'
