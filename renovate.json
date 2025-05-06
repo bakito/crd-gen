@@ -5,8 +5,8 @@
       "customType": "regex",
       "datasourceTemplate": "go",
       "description": "Update toolbox tools in .toolbox.mk",
-      "fileMatch": [
-        "^\\.toolbox\\.mk$"
+      "managerFilePatterns": [
+        ".toolbox.mk"
       ],
       "matchStrings": [
         "# renovate: packageName=(?<packageName>.+?)\\s+.+?_VERSION \\?= (?<currentValue>.+?)\\s"
@@ -16,11 +16,11 @@
       "customType": "regex",
       "datasourceTemplate": "go",
       "description": "Update extract-crd-api modules in generate.go",
-      "fileMatch": [
-        "^generate\\.go$"
+      "managerFilePatterns": [
+        "generate.go"
       ],
       "matchStrings": [
-        "\/\/go:generate.*-module [\"]?(?<packageName>.+?)@(?<currentValue>.+?)[\"]?\\s"
+        "//go:generate.*-module [\"]?(?<packageName>.+?)@(?<currentValue>.+?)[\"]?\\s"
       ]
     }
   ]
