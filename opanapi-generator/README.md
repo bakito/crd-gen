@@ -8,6 +8,6 @@ go generate
 
 ## TODO
 
-- [ ] generate list
+- [x] generate list
 - [ ] generate group versioninfo
 - [ ] generate dynamic file names

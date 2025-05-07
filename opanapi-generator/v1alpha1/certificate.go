@@ -8,6 +8,15 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // +kubebuilder:object:root=true
 
+// CertificateList is a list of Certificates. 
+type CertificateList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items []Certificate `json:"items"`
+}
+
+// +kubebuilder:object:root=true
+
 // Certificate represents a Certificate
 type Certificate struct {
 	metav1.TypeMeta   `json:",inline"`

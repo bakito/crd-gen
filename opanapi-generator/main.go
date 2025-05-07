@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/jinzhu/inflection"
 	apiv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -246,6 +247,15 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 
 		if structDef.Root {
 			_, _ = sb.WriteString("// +kubebuilder:object:root=true\n\n")
+			_, _ = sb.WriteString(fmt.Sprintf("// %sList is a list of %s. \n", structDef.Name, inflection.Plural(structDef.Name)))
+			_, _ = sb.WriteString(fmt.Sprintf("type %sList struct {\n", structDef.Name))
+			_, _ = sb.WriteString("\tmetav1.TypeMeta   `json:\",inline\"`\n")
+			_, _ = sb.WriteString("\tmetav1.ObjectMeta `json:\"metadata,omitempty\"`\n")
+			_, _ = sb.WriteString(fmt.Sprintf("\tItems []%s `json:\"items\"`\n", structDef.Name))
+			_, _ = sb.WriteString("}\n\n")
+
+			_, _ = sb.WriteString("// +kubebuilder:object:root=true\n\n")
+
 		}
 
 		// Add struct comment
