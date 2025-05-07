@@ -126,7 +126,6 @@ func mapType(prop apiv1.JSONSchemaProps) string {
 
 // Extract schemas from CRD.
 func extractSchemas(crd apiv1.CustomResourceDefinition, desiredVersion string) (*apiv1.JSONSchemaProps, string) {
-
 	// Try to get schema from new CRD format first (v1)
 	if len(crd.Spec.Versions) > 0 {
 		for _, v := range crd.Spec.Versions {
@@ -373,6 +372,8 @@ func main() {
 
 	var crdGroup string
 	var crdKind string
+
+	var files []outFile
 	for i, crd := range crds {
 		// Read first crd file
 		data, err := os.ReadFile(crd)
@@ -428,18 +429,17 @@ func main() {
 
 		// Write output file
 		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))
-		err = os.WriteFile(outputFile, []byte(typesCode), 0o644)
-		if err != nil {
-			slog.Error("Error writing output file", "error", err)
-			return
-		}
-		slog.Info(
-			"Successfully generated Go structs",
-			"group", crdGroup,
-			"version", version,
-			"kind", crdKind,
-			"file", outputFile,
-		)
+		files = append(files, outFile{
+			name:       outputFile,
+			content:    typesCode,
+			successMsg: "Successfully generated Go structs",
+			successArgs: []any{
+				"group", crdGroup,
+				"version", version,
+				"kind", crdKind,
+				"file", outputFile,
+			},
+		})
 	}
 
 	// Generate GroupVersionInfo code
@@ -447,11 +447,34 @@ func main() {
 
 	// Write output file
 	outputFile := filepath.Join(target, version, "group_version_info.go")
-	err := os.WriteFile(outputFile, []byte(gvi), 0o644)
-	if err != nil {
-		slog.Error("Error writing output file", "error", err)
-		return
-	}
 
-	slog.Info("Successfully generated GroupVersionInfo", "group", crdGroup, "version", version, "file", outputFile)
+	files = append(files, outFile{
+		name:       outputFile,
+		content:    gvi,
+		successMsg: "Successfully generated GroupVersionInfo",
+		successArgs: []any{
+			"group", crdGroup, "version", version, "file", outputFile,
+		},
+	})
+
+	writeFiles(files)
+}
+
+func writeFiles(files []outFile) {
+	for _, f := range files {
+		err := os.WriteFile(f.name, []byte(f.content), 0o644)
+		if err != nil {
+			slog.Error("Error writing output file", "error", err)
+			return
+		}
+
+		slog.With(f.successArgs...).Info(f.successMsg)
+	}
+}
+
+type outFile struct {
+	name        string
+	content     string
+	successMsg  string
+	successArgs []any
 }
