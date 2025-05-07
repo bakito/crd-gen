@@ -11,5 +11,6 @@ go generate
 - [x] generate list
 - [x] generate group versioninfo
 - [x] generate dynamic file names
-- [ ] define proper args
+- [x] define proper args
+- [ ] add version flag
 - [ ] use go templates instead of string builder

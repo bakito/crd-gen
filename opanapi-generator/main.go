@@ -1,8 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bakito/extract-crd-api/internal/flags"
 	"github.com/jinzhu/inflection"
 	apiv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -352,64 +354,98 @@ func generateGroupVersionInfoCode(group, version string) string {
 	return sb.String()
 }
 
+var (
+	crds    flags.ArrayFlags
+	target  string
+	version string
+)
+
 func main() {
-	if len(os.Args) < 3 {
-		_, _ = fmt.Println("Usage: crd-parser <crd-yaml-file> <output-directory>")
-		os.Exit(1)
+	flag.Var(&crds, "crd", "CRD file to process")
+	flag.StringVar(&target, "target", "", "The target directory to copyFile the files to")
+	flag.Parse()
+
+	if strings.TrimSpace(target) == "" {
+		slog.Error("Flag must be defined", "flag", "target")
+		return
+	}
+	if len(crds) == 0 {
+		slog.Error("At lease on CRD must be defined", "flag", "target")
+		return
 	}
 
-	inputFile := os.Args[1]
-	outputDir := os.Args[2]
+	var crdGroup string
+	var crdKind string
+	for i, crd := range crds {
+		// Read first crd file
+		data, err := os.ReadFile(crd)
+		if err != nil {
+			slog.Error("Error reading file", "error", err)
+			return
+		}
 
-	// Read input file
-	data, err := os.ReadFile(inputFile)
-	if err != nil {
-		log.Fatalf("Error reading file: %v", err)
+		// Parse CRD YAML
+		var crd apiv1.CustomResourceDefinition
+		err = yaml.Unmarshal(data, &crd)
+		if err != nil {
+			slog.Error("Error parsing YAML", "error", err)
+			return
+		}
+		// Extract CRD info
+
+		if i > 0 && crdGroup != crd.Spec.Group {
+			slog.Error(
+				"Not all CRD have the same group",
+				"group-a", crdGroup, "kind-a", crdKind,
+				"group-b", crd.Spec.Group, "kind-b", crd.Spec.Names.Kind,
+			)
+			return
+		}
+		crdKind = crd.Spec.Names.Kind
+		crdGroup = crd.Spec.Group
+
+		// Extract schema
+		var schema *apiv1.JSONSchemaProps
+		schema, version = extractSchemas(crd)
+		if schema == nil {
+			slog.Error("Could not find OpenAPI schema in CRD")
+			return
+		}
+
+		// Generate structs
+		structMap := make(map[string]*StructDef)
+		rootName := crdKind
+		generateStructs(schema, rootName, structMap, crdKind, true)
+
+		// Generate types code
+		typesCode := generateTypesCode(structMap, version, crdKind, crdGroup, version)
+
+		// Write output file
+		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))
+		err = os.WriteFile(outputFile, []byte(typesCode), 0o644)
+		if err != nil {
+			slog.Error("Error writing output file", "error", err)
+			return
+		}
+		slog.Info(
+			"Successfully generated Go structs",
+			"group", crdGroup,
+			"version", version,
+			"kind", crdKind,
+			"file", outputFile,
+		)
 	}
-
-	// Parse CRD YAML
-	var crd apiv1.CustomResourceDefinition
-	err = yaml.Unmarshal(data, &crd)
-	if err != nil {
-		log.Fatalf("Error parsing YAML: %v", err)
-	}
-
-	// Extract schema
-	schema, version := extractSchemas(crd)
-	if schema == nil {
-		log.Fatalf("Could not find OpenAPI schema in CRD")
-	}
-
-	// Extract CRD info
-	crdKind := crd.Spec.Names.Kind
-	crdGroup := crd.Spec.Group
-
-	// Generate structs
-	structMap := make(map[string]*StructDef)
-	rootName := crdKind
-	generateStructs(schema, rootName, structMap, crdKind, true)
-
-	// Generate types code
-	typesCode := generateTypesCode(structMap, version, crdKind, crdGroup, version)
-
-	// Write output file
-	outputFile := filepath.Join(outputDir, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))
-	err = os.WriteFile(outputFile, []byte(typesCode), 0o644)
-	if err != nil {
-		log.Fatalf("Error writing output file: %v", err)
-	}
-
-	_, _ = fmt.Printf("Successfully generated Go structs from %s CRD to %s\n", crdKind, outputFile)
 
 	// Generate GroupVersionInfo code
 	gvi := generateGroupVersionInfoCode(crdGroup, version)
 
 	// Write output file
-	outputFile = filepath.Join(outputDir, version, "group_version_info.go")
-	err = os.WriteFile(outputFile, []byte(gvi), 0o644)
+	outputFile := filepath.Join(target, version, "group_version_info.go")
+	err := os.WriteFile(outputFile, []byte(gvi), 0o644)
 	if err != nil {
-		log.Fatalf("Error writing output file: %v", err)
+		slog.Error("Error writing output file", "error", err)
+		return
 	}
 
-	_, _ = fmt.Printf("Successfully generated GroupVersionInfo from %s CRD to %s\n", crdKind, outputFile)
+	slog.Info("Successfully generated GroupVersionInfo", "group", crdGroup, "version", version, "file", outputFile)
 }
