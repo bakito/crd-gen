@@ -2,11 +2,7 @@
 
 package v1alpha1
 
-import (
-	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Generated from Certificate.cert-manager.io/v1 CRD
 
@@ -34,7 +30,7 @@ type CertificateSpec struct {
 	// This is a Beta Feature enabled by default. It can be disabled with the
 	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
 	// the controller and webhook components.
-	Additionaloutputformats []map[string]any `json:"additionalOutputFormats,omitempty"`
+	Additionaloutputformats []CertificateSpecAdditionaloutputformats `json:"additionalOutputFormats,omitempty"`
 	// Requested common name X509 certificate subject attribute.
 	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
 	// NOTE: TLS clients will ignore this value when any subject alternative name is
@@ -101,7 +97,7 @@ type CertificateSpec struct {
 	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
 	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
 	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
-	Othernames []map[string]any `json:"otherNames,omitempty"`
+	Othernames []CertificateSpecOthernames `json:"otherNames,omitempty"`
 	// Private key options. These include the key algorithm and size, the used
 	// encoding and the rotation policy.
 	Privatekey CertificateSpecPrivatekey `json:"privateKey,omitempty"`
@@ -171,6 +167,10 @@ type CertificateSpec struct {
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
 	Usages []string `json:"usages,omitempty"`
+}
+
+// CertificateSpecAdditionaloutputformats represents a Certificate.spec.additionalOutputFormats
+type CertificateSpecAdditionaloutputformats struct {
 }
 
 // CertificateSpecIssuerref represents a Certificate.spec.issuerRef
@@ -312,6 +312,10 @@ type CertificateSpecNameconstraintsPermitted struct {
 	Uridomains []string `json:"uriDomains,omitempty"`
 }
 
+// CertificateSpecOthernames represents a Certificate.spec.otherNames
+type CertificateSpecOthernames struct {
+}
+
 // CertificateSpecPrivatekey represents a Certificate.spec.privateKey
 type CertificateSpecPrivatekey struct {
 	// Algorithm is the private key algorithm of the corresponding private key
@@ -384,7 +388,7 @@ type CertificateSpecSubject struct {
 type CertificateStatus struct {
 	// List of status conditions to indicate the status of certificates.
 	// Known condition types are `Ready` and `Issuing`.
-	Conditions []map[string]any `json:"conditions,omitempty"`
+	Conditions []CertificateStatusConditions `json:"conditions,omitempty"`
 	// The number of continuous failed issuance attempts up till now. This
 	// field gets removed (if set) on a successful issuance and gets set to
 	// 1 if unset and an issuance has failed. If an issuance has failed, the
@@ -396,7 +400,7 @@ type CertificateStatus struct {
 	// issuance has failed, the delay till the next issuance will be
 	// calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -
 	// 1). If the latest issuance has succeeded this field will be unset.
-	Lastfailuretime time.Time `json:"lastFailureTime,omitempty"`
+	Lastfailuretime metav1.Time `json:"lastFailureTime,omitempty"`
 	// The name of the Secret resource containing the private key to be used
 	// for the next certificate iteration.
 	// The keymanager controller will automatically set this field if the
@@ -406,14 +410,14 @@ type CertificateStatus struct {
 	Nextprivatekeysecretname string `json:"nextPrivateKeySecretName,omitempty"`
 	// The expiration time of the certificate stored in the secret named
 	// by this resource in `spec.secretName`.
-	Notafter time.Time `json:"notAfter,omitempty"`
+	Notafter metav1.Time `json:"notAfter,omitempty"`
 	// The time after which the certificate stored in the secret named
 	// by this resource in `spec.secretName` is valid.
-	Notbefore time.Time `json:"notBefore,omitempty"`
+	Notbefore metav1.Time `json:"notBefore,omitempty"`
 	// RenewalTime is the time at which the certificate will be next
 	// renewed.
 	// If not set, no upcoming renewal is scheduled.
-	Renewaltime time.Time `json:"renewalTime,omitempty"`
+	Renewaltime metav1.Time `json:"renewalTime,omitempty"`
 	// The current 'revision' of the certificate as issued.
 	// 
 	// When a CertificateRequest resource is created, it will have the
@@ -429,5 +433,9 @@ type CertificateStatus struct {
 	// checking if the revision value in the annotation is greater than this
 	// field.
 	Revision int64 `json:"revision,omitempty"`
+}
+
+// CertificateStatusConditions represents a Certificate.status.conditions
+type CertificateStatusConditions struct {
 }
 
