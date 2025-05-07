@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // SchemaProperty represents a property in an OpenAPI schema
@@ -334,7 +335,13 @@ func main() {
 
 	// Parse CRD YAML
 	var crd CustomResourceDefinition
+	var crd2 v1.CustomResourceDefinition
 	err = yaml.Unmarshal(data, &crd)
+	if err != nil {
+		log.Fatalf("Error parsing YAML: %v", err)
+	}
+
+	err = yaml.Unmarshal(data, &crd2)
 	if err != nil {
 		log.Fatalf("Error parsing YAML: %v", err)
 	}
