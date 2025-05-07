@@ -40,6 +40,8 @@ type FieldDef struct {
 	Type        string
 	JSONTag     string
 	Description string
+	Enums       []string
+	EnumType    string
 }
 
 // Helper function to convert string to CamelCase.
@@ -131,6 +133,15 @@ func extractSchemas(crd apiv1.CustomResourceDefinition) (*apiv1.JSONSchemaProps,
 	return schema, version
 }
 
+// Process schema and generate enums.
+func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []string) {
+	for _, e := range prop.Enum {
+		val := strings.ReplaceAll(string(e.Raw), `"`, "")
+		enums = append(enums, fieldName+val)
+	}
+	return enums
+}
+
 // Process schema and generate structs.
 func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[string]*StructDef, path string, root bool) {
 	structDef := &StructDef{
@@ -181,10 +192,20 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 
 		field := FieldDef{
 			Name:        fieldName,
-			Type:        fieldType,
 			JSONTag:     propName,
 			Description: prop.Description,
 		}
+
+		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
+			// FIXME
+		} else if len(prop.Enum) > 0 {
+			nestedName := name + fieldName
+			field.Enums = generateEnum(&prop, nestedName)
+			field.EnumType = prop.Type
+			fieldType = nestedName
+		}
+
+		field.Type = fieldType
 
 		structDef.Fields = append(structDef.Fields, field)
 	}
@@ -242,6 +263,20 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 
 		// Close struct definition
 		_, _ = sb.WriteString("}\n\n")
+
+		// Enums
+		for _, field := range structDef.Fields {
+			if len(field.Enums) > 0 {
+				// Start enum definition
+				_, _ = sb.WriteString(fmt.Sprintf("\ntype %s %s\n\n", field.Type, field.EnumType))
+				_, _ = sb.WriteString("var (\n")
+				for _, e := range field.Enums {
+					_, _ = sb.WriteString(fmt.Sprintf("\t%s %s\n", e, field.EnumType))
+				}
+				_, _ = sb.WriteString(")\n\n")
+			}
+		}
+
 	}
 
 	return sb.String()

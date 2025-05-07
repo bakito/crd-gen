@@ -260,8 +260,17 @@ type CertificateSpecKeystoresPkcs12 struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (eg. because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
-	Profile string `json:"profile,omitempty"`
+	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
+
+
+type CertificateSpecKeystoresPkcs12Profile string
+
+var (
+	CertificateSpecKeystoresPkcs12ProfileLegacyRC2 string
+	CertificateSpecKeystoresPkcs12ProfileLegacyDES string
+	CertificateSpecKeystoresPkcs12ProfileModern2023 string
+)
 
 // CertificateSpecKeystoresPkcs12Passwordsecretref represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
 type CertificateSpecKeystoresPkcs12Passwordsecretref struct {
@@ -326,14 +335,14 @@ type CertificateSpecPrivatekey struct {
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
-	Algorithm string `json:"algorithm,omitempty"`
+	Algorithm CertificateSpecPrivatekeyAlgorithm `json:"algorithm,omitempty"`
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
 	// 
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
-	Encoding string `json:"encoding,omitempty"`
+	Encoding CertificateSpecPrivatekeyEncoding `json:"encoding,omitempty"`
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
 	// 
@@ -344,7 +353,7 @@ type CertificateSpecPrivatekey struct {
 	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
 	// Default is `Never` for backward compatibility.
-	Rotationpolicy string `json:"rotationPolicy,omitempty"`
+	Rotationpolicy CertificateSpecPrivatekeyRotationpolicy `json:"rotationPolicy,omitempty"`
 	// Size is the key bit size of the corresponding private key for this certificate.
 	// 
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
@@ -355,6 +364,31 @@ type CertificateSpecPrivatekey struct {
 	// No other values are allowed.
 	Size int64 `json:"size,omitempty"`
 }
+
+
+type CertificateSpecPrivatekeyAlgorithm string
+
+var (
+	CertificateSpecPrivatekeyAlgorithmRSA string
+	CertificateSpecPrivatekeyAlgorithmECDSA string
+	CertificateSpecPrivatekeyAlgorithmEd25519 string
+)
+
+
+type CertificateSpecPrivatekeyEncoding string
+
+var (
+	CertificateSpecPrivatekeyEncodingPKCS1 string
+	CertificateSpecPrivatekeyEncodingPKCS8 string
+)
+
+
+type CertificateSpecPrivatekeyRotationpolicy string
+
+var (
+	CertificateSpecPrivatekeyRotationpolicyNever string
+	CertificateSpecPrivatekeyRotationpolicyAlways string
+)
 
 // CertificateSpecSecrettemplate represents a Certificate.spec.secretTemplate
 type CertificateSpecSecrettemplate struct {
