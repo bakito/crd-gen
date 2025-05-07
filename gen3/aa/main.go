@@ -215,8 +215,12 @@ func generateStructs(schema map[string]any, name string, structMap map[string]*S
 					fieldType = nestedName
 					generateStructs(propMap, nestedName, structMap, path+"."+propName, false)
 				} else {
-					// Object with no properties, use map
-					fieldType = "map[string]interface{}"
+					if additional, ok := propMap["additionalProperties"].(map[string]any); ok && len(additional) > 0 {
+						fieldType = fmt.Sprintf("map[string]%s", additional["type"].(string))
+					} else {
+						// Object with no properties, use map
+						fieldType = "map[string]interface{}"
+					}
 				}
 			} else {
 				fieldType = mapType(fieldName, propMap)

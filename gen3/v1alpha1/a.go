@@ -355,9 +355,9 @@ type CertificateSpecPrivatekey struct {
 // CertificateSpecSecrettemplate represents a Certificate.spec.secretTemplate
 type CertificateSpecSecrettemplate struct {
 	// Annotations is a key value map to be copied to the target Kubernetes Secret.
-	Annotations map[string]interface{} `json:"annotations,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
-	Labels map[string]interface{} `json:"labels,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // CertificateSpecSubject represents a Certificate.spec.subject
