@@ -9,6 +9,7 @@ go generate
 ## TODO
 
 - [x] generate list
-- [ ] generate group versioninfo
+- [x] generate group versioninfo
 - [x] generate dynamic file names
 - [ ] define proper args
+- [ ] use go templates instead of string builder
