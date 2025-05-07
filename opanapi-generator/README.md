@@ -10,4 +10,5 @@ go generate
 
 - [x] generate list
 - [ ] generate group versioninfo
-- [ ] generate dynamic file names
+- [x] generate dynamic file names
+- [ ] define proper args

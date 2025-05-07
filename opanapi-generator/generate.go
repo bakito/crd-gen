@@ -2,10 +2,10 @@
 // +build generate
 
 // run the generator
-//go:generate go run main.go mycrd.yaml v1alpha1/certificate.go
+//go:generate go run main.go mycrd.yaml .
 
 // Generate deepcopy methodsets and CRD manifests
-//go:generate go run -tags generate sigs.k8s.io/controller-tools/cmd/controller-gen object paths=./v1alpha1
+//go:generate go run -tags generate sigs.k8s.io/controller-tools/cmd/controller-gen object paths=./v1
 
 package main
 

@@ -339,12 +339,12 @@ func getPackageName(filePath string) string {
 
 func main() {
 	if len(os.Args) < 3 {
-		_, _ = fmt.Println("Usage: crd-parser <crd-yaml-file> <output-go-file>")
+		_, _ = fmt.Println("Usage: crd-parser <crd-yaml-file> <output-directory>")
 		os.Exit(1)
 	}
 
 	inputFile := os.Args[1]
-	outputFile := os.Args[2]
+	outputDir := os.Args[2]
 
 	// Read input file
 	data, err := os.ReadFile(inputFile)
@@ -375,10 +375,10 @@ func main() {
 	generateStructs(schema, rootName, structMap, crdKind, true)
 
 	// Generate Go code
-	packageName := getPackageName(outputFile)
-	goCode := generateGoCode(structMap, packageName, crdKind, crdGroup, version)
+	goCode := generateGoCode(structMap, version, crdKind, crdGroup, version)
 
 	// Write output file
+	outputFile := filepath.Join(outputDir, version, fmt.Sprintf("%s_types.go", strings.ToLower(crdKind)))
 	err = os.WriteFile(outputFile, []byte(goCode), 0o644)
 	if err != nil {
 		log.Fatalf("Error writing output file: %v", err)
