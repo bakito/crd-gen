@@ -6,11 +6,6 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Generated from CertificateRequest.cert-manager.io/v1 CRD
 
-func init() {
-	// Register types with the scheme
-	SchemeBuilder.Register(&CertificateRequest{}, &CertificateRequestList{})
-}
-
 // +kubebuilder:object:root=true
 
 // CertificateRequestList is a list of CertificateRequests. 

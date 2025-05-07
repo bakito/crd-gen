@@ -20,3 +20,9 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
+func init() {
+	// Register types with the scheme
+	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
+	SchemeBuilder.Register(&CertificateRequest{}, &CertificateRequestList{})
+}
+
