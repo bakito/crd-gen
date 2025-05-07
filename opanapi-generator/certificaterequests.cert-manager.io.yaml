@@ -322,27 +322,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    categories:
-    - cert-manager
-    kind: CertificateRequest
-    listKind: CertificateRequestList
-    plural: certificaterequests
-    shortNames:
-    - cr
-    - crs
-    singular: certificaterequest
-  conditions:
-  - lastTransitionTime: "2025-03-21T18:38:40Z"
-    message: no conflicts found
-    reason: NoConflicts
-    status: "True"
-    type: NamesAccepted
-  - lastTransitionTime: "2025-03-21T18:38:40Z"
-    message: the initial names have been accepted
-    reason: InitialNamesAccepted
-    status: "True"
-    type: Established
-  storedVersions:
-  - v1

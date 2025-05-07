@@ -125,22 +125,18 @@ func mapType(prop apiv1.JSONSchemaProps) string {
 }
 
 // Extract schemas from CRD.
-func extractSchemas(crd apiv1.CustomResourceDefinition) (*apiv1.JSONSchemaProps, string) {
-	var schema *apiv1.JSONSchemaProps
-	var version string
+func extractSchemas(crd apiv1.CustomResourceDefinition, desiredVersion string) (*apiv1.JSONSchemaProps, string) {
 
 	// Try to get schema from new CRD format first (v1)
 	if len(crd.Spec.Versions) > 0 {
 		for _, v := range crd.Spec.Versions {
-			if v.Storage {
-				schema = v.Schema.OpenAPIV3Schema
-				version = v.Name
-				break
+			if v.Storage && (desiredVersion == "" || desiredVersion == v.Name) {
+				return v.Schema.OpenAPIV3Schema, v.Name
 			}
 		}
 	}
 
-	return schema, version
+	return nil, ""
 }
 
 // Process schema and generate enums.
@@ -363,6 +359,7 @@ var (
 func main() {
 	flag.Var(&crds, "crd", "CRD file to process")
 	flag.StringVar(&target, "target", "", "The target directory to copyFile the files to")
+	flag.StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
 	flag.Parse()
 
 	if strings.TrimSpace(target) == "" {
@@ -405,12 +402,21 @@ func main() {
 		crdGroup = crd.Spec.Group
 
 		// Extract schema
-		var schema *apiv1.JSONSchemaProps
-		schema, version = extractSchemas(crd)
+		schema, foundVersion := extractSchemas(crd, version)
 		if schema == nil {
-			slog.Error("Could not find OpenAPI schema in CRD")
+			slog.Error("Could not find OpenAPI schema in CRD", "version", version)
 			return
 		}
+
+		if version != "" && version != foundVersion {
+			slog.Error(
+				"Not all CRD have the same verion",
+				"group-a", crdGroup, "version-a", version, "kind-a", crdKind,
+				"group-b", crd.Spec.Group, "version-b", foundVersion, "kind-b", crd.Spec.Names.Kind,
+			)
+			return
+		}
+		version = foundVersion
 
 		// Generate structs
 		structMap := make(map[string]*StructDef)
