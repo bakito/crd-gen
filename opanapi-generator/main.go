@@ -292,9 +292,11 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 		for _, field := range structDef.Fields {
 			if len(field.Enums) > 0 {
 				// Start enum definition
+				_, _ = sb.WriteString(fmt.Sprintf("// %s represents an enumeration for %s\n", field.EnumName, field.Name))
 				_, _ = sb.WriteString(fmt.Sprintf("type %s %s\n\n", field.EnumName, field.EnumType))
 				_, _ = sb.WriteString("var (\n")
 				for _, e := range field.Enums {
+					_, _ = sb.WriteString(fmt.Sprintf("\t// %s %s enum value %s\n", e.Name, field.Name, e.Value))
 					_, _ = sb.WriteString(fmt.Sprintf("\t%s %s = %s\n", e.Name, field.EnumName, e.Value))
 				}
 				_, _ = sb.WriteString(")\n\n")

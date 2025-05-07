@@ -178,31 +178,55 @@ type CertificateSpec struct {
 	Usages []CertificateSpecUsages `json:"usages,omitempty"`
 }
 
+// CertificateSpecUsages represents an enumeration for Usages
 type CertificateSpecUsages string
 
 var (
+	// CertificateSpecUsagesSigning Usages enum value "signing"
 	CertificateSpecUsagesSigning CertificateSpecUsages = "signing"
+	// CertificateSpecUsagesDigitalSignature Usages enum value "digital signature"
 	CertificateSpecUsagesDigitalSignature CertificateSpecUsages = "digital signature"
+	// CertificateSpecUsagesContentCommitment Usages enum value "content commitment"
 	CertificateSpecUsagesContentCommitment CertificateSpecUsages = "content commitment"
+	// CertificateSpecUsagesKeyEncipherment Usages enum value "key encipherment"
 	CertificateSpecUsagesKeyEncipherment CertificateSpecUsages = "key encipherment"
+	// CertificateSpecUsagesKeyAgreement Usages enum value "key agreement"
 	CertificateSpecUsagesKeyAgreement CertificateSpecUsages = "key agreement"
+	// CertificateSpecUsagesDataEncipherment Usages enum value "data encipherment"
 	CertificateSpecUsagesDataEncipherment CertificateSpecUsages = "data encipherment"
+	// CertificateSpecUsagesCertSign Usages enum value "cert sign"
 	CertificateSpecUsagesCertSign CertificateSpecUsages = "cert sign"
+	// CertificateSpecUsagesCrlSign Usages enum value "crl sign"
 	CertificateSpecUsagesCrlSign CertificateSpecUsages = "crl sign"
+	// CertificateSpecUsagesEncipherOnly Usages enum value "encipher only"
 	CertificateSpecUsagesEncipherOnly CertificateSpecUsages = "encipher only"
+	// CertificateSpecUsagesDecipherOnly Usages enum value "decipher only"
 	CertificateSpecUsagesDecipherOnly CertificateSpecUsages = "decipher only"
+	// CertificateSpecUsagesAny Usages enum value "any"
 	CertificateSpecUsagesAny CertificateSpecUsages = "any"
+	// CertificateSpecUsagesServerAuth Usages enum value "server auth"
 	CertificateSpecUsagesServerAuth CertificateSpecUsages = "server auth"
+	// CertificateSpecUsagesClientAuth Usages enum value "client auth"
 	CertificateSpecUsagesClientAuth CertificateSpecUsages = "client auth"
+	// CertificateSpecUsagesCodeSigning Usages enum value "code signing"
 	CertificateSpecUsagesCodeSigning CertificateSpecUsages = "code signing"
+	// CertificateSpecUsagesEmailProtection Usages enum value "email protection"
 	CertificateSpecUsagesEmailProtection CertificateSpecUsages = "email protection"
+	// CertificateSpecUsagesSMime Usages enum value "s/mime"
 	CertificateSpecUsagesSMime CertificateSpecUsages = "s/mime"
+	// CertificateSpecUsagesIpsecEndSystem Usages enum value "ipsec end system"
 	CertificateSpecUsagesIpsecEndSystem CertificateSpecUsages = "ipsec end system"
+	// CertificateSpecUsagesIpsecTunnel Usages enum value "ipsec tunnel"
 	CertificateSpecUsagesIpsecTunnel CertificateSpecUsages = "ipsec tunnel"
+	// CertificateSpecUsagesIpsecUser Usages enum value "ipsec user"
 	CertificateSpecUsagesIpsecUser CertificateSpecUsages = "ipsec user"
+	// CertificateSpecUsagesTimestamping Usages enum value "timestamping"
 	CertificateSpecUsagesTimestamping CertificateSpecUsages = "timestamping"
+	// CertificateSpecUsagesOcspSigning Usages enum value "ocsp signing"
 	CertificateSpecUsagesOcspSigning CertificateSpecUsages = "ocsp signing"
+	// CertificateSpecUsagesMicrosoftSgc Usages enum value "microsoft sgc"
 	CertificateSpecUsagesMicrosoftSgc CertificateSpecUsages = "microsoft sgc"
+	// CertificateSpecUsagesNetscapeSgc Usages enum value "netscape sgc"
 	CertificateSpecUsagesNetscapeSgc CertificateSpecUsages = "netscape sgc"
 )
 
@@ -213,10 +237,13 @@ type CertificateSpecAdditionaloutputformats struct {
 	Type CertificateSpecAdditionaloutputformatsType `json:"type,omitempty"`
 }
 
+// CertificateSpecAdditionaloutputformatsType represents an enumeration for Type
 type CertificateSpecAdditionaloutputformatsType string
 
 var (
+	// CertificateSpecAdditionaloutputformatsTypeDer Type enum value "DER"
 	CertificateSpecAdditionaloutputformatsTypeDer CertificateSpecAdditionaloutputformatsType = "DER"
+	// CertificateSpecAdditionaloutputformatsTypeCombinedpem Type enum value "CombinedPEM"
 	CertificateSpecAdditionaloutputformatsTypeCombinedpem CertificateSpecAdditionaloutputformatsType = "CombinedPEM"
 )
 
@@ -310,11 +337,15 @@ type CertificateSpecKeystoresPkcs12 struct {
 	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
 
+// CertificateSpecKeystoresPkcs12Profile represents an enumeration for Profile
 type CertificateSpecKeystoresPkcs12Profile string
 
 var (
+	// CertificateSpecKeystoresPkcs12ProfileLegacyrc2 Profile enum value "LegacyRC2"
 	CertificateSpecKeystoresPkcs12ProfileLegacyrc2 CertificateSpecKeystoresPkcs12Profile = "LegacyRC2"
+	// CertificateSpecKeystoresPkcs12ProfileLegacydes Profile enum value "LegacyDES"
 	CertificateSpecKeystoresPkcs12ProfileLegacydes CertificateSpecKeystoresPkcs12Profile = "LegacyDES"
+	// CertificateSpecKeystoresPkcs12ProfileModern2023 Profile enum value "Modern2023"
 	CertificateSpecKeystoresPkcs12ProfileModern2023 CertificateSpecKeystoresPkcs12Profile = "Modern2023"
 )
 
@@ -418,25 +449,35 @@ type CertificateSpecPrivatekey struct {
 	Size int64 `json:"size,omitempty"`
 }
 
+// CertificateSpecPrivatekeyAlgorithm represents an enumeration for Algorithm
 type CertificateSpecPrivatekeyAlgorithm string
 
 var (
+	// CertificateSpecPrivatekeyAlgorithmRsa Algorithm enum value "RSA"
 	CertificateSpecPrivatekeyAlgorithmRsa CertificateSpecPrivatekeyAlgorithm = "RSA"
+	// CertificateSpecPrivatekeyAlgorithmEcdsa Algorithm enum value "ECDSA"
 	CertificateSpecPrivatekeyAlgorithmEcdsa CertificateSpecPrivatekeyAlgorithm = "ECDSA"
+	// CertificateSpecPrivatekeyAlgorithmEd25519 Algorithm enum value "Ed25519"
 	CertificateSpecPrivatekeyAlgorithmEd25519 CertificateSpecPrivatekeyAlgorithm = "Ed25519"
 )
 
+// CertificateSpecPrivatekeyEncoding represents an enumeration for Encoding
 type CertificateSpecPrivatekeyEncoding string
 
 var (
+	// CertificateSpecPrivatekeyEncodingPkcs1 Encoding enum value "PKCS1"
 	CertificateSpecPrivatekeyEncodingPkcs1 CertificateSpecPrivatekeyEncoding = "PKCS1"
+	// CertificateSpecPrivatekeyEncodingPkcs8 Encoding enum value "PKCS8"
 	CertificateSpecPrivatekeyEncodingPkcs8 CertificateSpecPrivatekeyEncoding = "PKCS8"
 )
 
+// CertificateSpecPrivatekeyRotationpolicy represents an enumeration for Rotationpolicy
 type CertificateSpecPrivatekeyRotationpolicy string
 
 var (
+	// CertificateSpecPrivatekeyRotationpolicyNever Rotationpolicy enum value "Never"
 	CertificateSpecPrivatekeyRotationpolicyNever CertificateSpecPrivatekeyRotationpolicy = "Never"
+	// CertificateSpecPrivatekeyRotationpolicyAlways Rotationpolicy enum value "Always"
 	CertificateSpecPrivatekeyRotationpolicyAlways CertificateSpecPrivatekeyRotationpolicy = "Always"
 )
 
@@ -542,11 +583,15 @@ type CertificateStatusConditions struct {
 	Type string `json:"type,omitempty"`
 }
 
+// CertificateStatusConditionsStatus represents an enumeration for Status
 type CertificateStatusConditionsStatus string
 
 var (
+	// CertificateStatusConditionsStatusTrue Status enum value "True"
 	CertificateStatusConditionsStatusTrue CertificateStatusConditionsStatus = "True"
+	// CertificateStatusConditionsStatusFalse Status enum value "False"
 	CertificateStatusConditionsStatusFalse CertificateStatusConditionsStatus = "False"
+	// CertificateStatusConditionsStatusUnknown Status enum value "Unknown"
 	CertificateStatusConditionsStatusUnknown CertificateStatusConditionsStatus = "Unknown"
 )
 
