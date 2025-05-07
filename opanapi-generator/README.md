@@ -5,3 +5,9 @@ run the following command in this directory
 ```bash
 go generate
 ```
+
+## TODO
+
+- [ ] generate list
+- [ ] generate group versioninfo
+- [ ] generate dynamic file names
