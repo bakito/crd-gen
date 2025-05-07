@@ -2,20 +2,21 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/exp/maps"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"unicode"
 
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-// SchemaProperty represents a property in an OpenAPI schema
+// SchemaProperty represents a property in an OpenAPI schema.
 type SchemaProperty struct {
 	Type        any            `yaml:"type"`
 	Format      string         `yaml:"format,omitempty"`
@@ -25,37 +26,7 @@ type SchemaProperty struct {
 	Ref         string         `yaml:"$ref,omitempty"`
 }
 
-// CustomResourceDefinition represents a simplified K8s CRD structure
-type CustomResourceDefinition struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
-	Metadata   struct {
-		Name string `yaml:"name"`
-	} `yaml:"metadata"`
-	Spec struct {
-		Group    string `yaml:"group"`
-		Version  string `yaml:"version,omitempty"`
-		Versions []struct {
-			Name    string `yaml:"name"`
-			Served  bool   `yaml:"served"`
-			Storage bool   `yaml:"storage"`
-			Schema  struct {
-				OpenAPIV3Schema map[string]any `yaml:"openAPIV3Schema"`
-			} `yaml:"schema,omitempty"`
-		} `yaml:"versions,omitempty"`
-		Names struct {
-			Kind     string `yaml:"kind"`
-			ListKind string `yaml:"listKind,omitempty"`
-			Plural   string `yaml:"plural"`
-			Singular string `yaml:"singular,omitempty"`
-		} `yaml:"names"`
-		Validation struct {
-			OpenAPIV3Schema map[string]any `yaml:"openAPIV3Schema,omitempty"`
-		} `yaml:"validation,omitempty"`
-	} `yaml:"spec"`
-}
-
-// StructDef represents a Go struct definition
+// StructDef represents a Go struct definition.
 type StructDef struct {
 	Name        string
 	Fields      []FieldDef
@@ -63,7 +34,7 @@ type StructDef struct {
 	Root        bool
 }
 
-// FieldDef represents a field in a Go struct
+// FieldDef represents a field in a Go struct.
 type FieldDef struct {
 	Name        string
 	Type        string
@@ -71,7 +42,7 @@ type FieldDef struct {
 	Description string
 }
 
-// Helper function to convert string to CamelCase
+// Helper function to convert string to CamelCase.
 func toCamelCase(s string) string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
@@ -86,74 +57,64 @@ func toCamelCase(s string) string {
 	return strings.Join(words, "")
 }
 
-// Helper function to map OpenAPI types to Go types
-func mapType(name string, property map[string]any) string {
-	typeValue, hasType := property["type"]
-	if !hasType {
-		// Check for $ref
-		if ref, ok := property["$ref"].(string); ok {
-			parts := strings.Split(ref, "/")
+// Helper function to map OpenAPI types to Go types.
+func mapType(name string, prop v1.JSONSchemaProps) string {
+	if prop.Type == "" {
+		if prop.Ref != nil {
+			parts := strings.Split(*prop.Ref, "/")
 			return toCamelCase(parts[len(parts)-1])
 		}
 		return "any"
 	}
 
-	switch t := typeValue.(type) {
-	case string:
-		switch t {
-		case "string":
-			format, ok := property["format"]
-			if ok {
-				switch format {
-				case "date-time":
-					return "time.Time"
-				case "byte", "binary":
-					return "[]byte"
-				}
+	switch prop.Type {
+	case "string":
+		if prop.Format != "" {
+			switch prop.Format {
+			case "date-time":
+				return "time.Time"
+			case "byte", "binary":
+				return "[]byte"
 			}
-			return "string"
-		case "integer", "number":
-			format, ok := property["format"]
-			if ok {
-				switch format {
-				case "int32":
-					return "int32"
-				case "int64":
-					return "int64"
-				case "float":
-					return "float32"
-				case "double":
-					return "float64"
-				}
-			}
-			if t == "integer" {
-				return "int64"
-			}
-			return "float64"
-		case "boolean":
-			return "bool"
-		case "array":
-			items, ok := property["items"].(map[string]any)
-			if ok {
-				itemType := mapType(name, items)
-				return "[]" + itemType
-			}
-			return "[]any"
-		case "object":
-			// We don't need to mark this for later replacement since we'll handle object types
-			// directly in the generateStructs function
-			return "map[string]any"
-		default:
-			return "any"
 		}
+		return "string"
+	case "integer", "number":
+		if prop.Format != "" {
+			switch prop.Format {
+			case "int32":
+				return "int32"
+			case "int64":
+				return "int64"
+			case "float":
+				return "float32"
+			case "double":
+				return "float64"
+			}
+		}
+		if prop.Type == "integer" {
+			return "int64"
+		}
+		return "float64"
+	case "boolean":
+		return "bool"
+	case "array":
+		if prop.Items != nil && prop.Items.Schema != nil {
+			itemType := mapType(name, *prop.Items.Schema)
+			return "[]" + itemType
+		}
+		return "[]any"
+	case "object":
+		// We don't need to mark this for later replacement since we'll handle object types
+		// directly in the generateStructs function
+		return "map[string]any"
 	default:
 		return "any"
 	}
 }
 
-// Extract schemas from CRD
-func extractSchemas(crd CustomResourceDefinition) (map[string]any, string) {
-	var schema map[string]any
+// Extract schemas from CRD.
+func extractSchemas(crd v1.CustomResourceDefinition) (*v1.JSONSchemaProps, string) {
+	var schema *v1.JSONSchemaProps
 	var version string
 
 	// Try to get schema from new CRD format first (v1)
@@ -167,22 +128,11 @@ func extractSchemas(crd CustomResourceDefinition) (map[string]any, string) {
 		}
 	}
 
-	// Fallback to old format (v1beta1)
-	if schema == nil && crd.Spec.Validation.OpenAPIV3Schema != nil {
-		schema = crd.Spec.Validation.OpenAPIV3Schema
-		version = crd.Spec.Version
-	}
-
 	return schema, version
 }
 
-// Process schema and generate structs
-func generateStructs(schema map[string]any, name string, structMap map[string]*StructDef, path string, root bool) {
-	props, hasProps := schema["properties"].(map[string]any)
-	if !hasProps {
-		return
-	}
-
+// Process schema and generate structs.
+func generateStructs(schema *v1.JSONSchemaProps, name string, structMap map[string]*StructDef, path string, root bool) {
 	structDef := &StructDef{
 		Root:        root,
 		Name:        name,
@@ -190,44 +140,33 @@ func generateStructs(schema map[string]any, name string, structMap map[string]*S
 	}
 	structMap[name] = structDef
 
-	for propName, propValue := range props {
-		propMap, ok := propValue.(map[string]any)
-		if !ok {
-			continue
-		}
-
+	for propName, prop := range schema.Properties {
 		fieldName := toCamelCase(propName)
 		var fieldType string
-		description := ""
 
-		if desc, ok := propMap["description"].(string); ok {
-			description = desc
-		}
-
-		typeVal, hasType := propMap["type"]
-		if hasType {
-			fieldType = mapType(propName, propMap)
+		if prop.Type != "" {
+			fieldType = mapType(propName, prop)
 
 			// Handle nested objects by creating a new struct
-			if typeStr, ok := typeVal.(string); ok && typeStr == "object" {
-				if nestedProps, ok := propMap["properties"].(map[string]any); ok && len(nestedProps) > 0 {
+			if prop.Type == "object" {
+				if len(prop.Properties) > 0 {
 					nestedName := name + fieldName
 					fieldType = nestedName
-					generateStructs(propMap, nestedName, structMap, path+"."+propName, false)
+					generateStructs(&prop, nestedName, structMap, path+"."+propName, false)
 				} else {
-					if additional, ok := propMap["additionalProperties"].(map[string]any); ok && len(additional) > 0 {
-						fieldType = fmt.Sprintf("map[string]%s", additional["type"].(string))
+					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
+						fieldType = "map[string]" + prop.AdditionalProperties.Schema.Type
 					} else {
 						// Object with no properties, use map
 						fieldType = "map[string]interface{}"
 					}
 				}
 			} else {
-				fieldType = mapType(fieldName, propMap)
+				fieldType = mapType(fieldName, prop)
 			}
-		} else if ref, ok := propMap["$ref"].(string); ok {
+		} else if prop.Ref != nil {
 			// Handle references
-			parts := strings.Split(ref, "/")
+			parts := strings.Split(*prop.Ref, "/")
 			fieldType = toCamelCase(parts[len(parts)-1])
 		} else {
 			fieldType = "any"
@@ -237,18 +176,18 @@ func generateStructs(schema map[string]any, name string, structMap map[string]*S
 			Name:        fieldName,
 			Type:        fieldType,
 			JsonTag:     propName,
-			Description: description,
+			Description: prop.Description,
 		}
 
 		structDef.Fields = append(structDef.Fields, field)
 	}
 }
 
-// Generate Go code from struct definitions
+// Generate Go code from struct definitions.
 func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGroup, crdVersion string) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("// Code generated by crd-parser. DO NOT EDIT.\n\n"))
+	sb.WriteString("// Code generated by crd-parser. DO NOT EDIT.\n\n")
 	sb.WriteString(fmt.Sprintf("package %s\n\n", packageName))
 
 	// Add imports
@@ -262,8 +201,7 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 	sb.WriteString(fmt.Sprintf("// Generated from %s.%s/%s CRD\n\n", crdKind, crdGroup, crdVersion))
 
 	// Sort and generate structs
-	sortedStructNames := maps.Keys(structMap)
-	sort.Strings(sortedStructNames)
+	sortedStructNames := slices.Sorted(maps.Keys(structMap))
 
 	for _, structName := range sortedStructNames {
 		structDef := structMap[structName]
@@ -314,7 +252,7 @@ func prepareDescription(desc string, field bool) string {
 	return strings.ReplaceAll(desc, "\n", fmt.Sprintf("\n%s// ", indent))
 }
 
-// Extract package name from a path
+// Extract package name from a path.
 func getPackageName(filePath string) string {
 	path := strings.Split(filePath, string(os.PathSeparator))
 	if len(path) > 1 {
@@ -352,14 +290,8 @@ func main() {
 	}
 
 	// Parse CRD YAML
-	var crd CustomResourceDefinition
-	var crd2 v1.CustomResourceDefinition
+	var crd v1.CustomResourceDefinition
 	err = yaml.Unmarshal(data, &crd)
-	if err != nil {
-		log.Fatalf("Error parsing YAML: %v", err)
-	}
-
-	err = yaml.Unmarshal(data, &crd2)
 	if err != nil {
 		log.Fatalf("Error parsing YAML: %v", err)
 	}
@@ -384,7 +316,7 @@ func main() {
 	goCode := generateGoCode(structMap, packageName, crdKind, crdGroup, version)
 
 	// Write output file
-	err = os.WriteFile(outputFile, []byte(goCode), 0644)
+	err = os.WriteFile(outputFile, []byte(goCode), 0o644)
 	if err != nil {
 		log.Fatalf("Error writing output file: %v", err)
 	}
