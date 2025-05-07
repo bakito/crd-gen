@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -85,9 +87,14 @@ func toCamelCase(s string) string {
 }
 
 // Helper function to map OpenAPI types to Go types
-func mapType(property map[string]any) string {
+func mapType(name string, property map[string]any) string {
 	typeValue, hasType := property["type"]
 	if !hasType {
+		// Check for $ref
+		if ref, ok := property["$ref"].(string); ok {
+			parts := strings.Split(ref, "/")
+			return toCamelCase(parts[len(parts)-1])
+		}
 		return "any"
 	}
 
@@ -128,7 +135,7 @@ func mapType(property map[string]any) string {
 		case "array":
 			items, ok := property["items"].(map[string]any)
 			if ok {
-				itemType := mapType(items)
+				itemType := mapType(name, items)
 				return "[]" + itemType
 			}
 			return "[]any"
@@ -199,7 +206,7 @@ func generateStructs(schema map[string]any, name string, structMap map[string]*S
 
 		typeVal, hasType := propMap["type"]
 		if hasType {
-			fieldType = mapType(propMap)
+			fieldType = mapType(propName, propMap)
 
 			// Handle nested objects by creating a new struct
 			if typeStr, ok := typeVal.(string); ok && typeStr == "object" {
@@ -212,7 +219,7 @@ func generateStructs(schema map[string]any, name string, structMap map[string]*S
 					fieldType = "map[string]interface{}"
 				}
 			} else {
-				fieldType = mapType(propMap)
+				fieldType = mapType(fieldName, propMap)
 			}
 		} else if ref, ok := propMap["$ref"].(string); ok {
 			// Handle references
@@ -251,7 +258,11 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 	sb.WriteString(fmt.Sprintf("// Generated from %s.%s/%s CRD\n\n", crdKind, crdGroup, crdVersion))
 
 	// Sort and generate structs
-	for _, structDef := range structMap {
+	sortedStructNames := maps.Keys(structMap)
+	sort.Strings(sortedStructNames)
+
+	for _, structName := range sortedStructNames {
+		structDef := structMap[structName]
 
 		if structDef.Root {
 			sb.WriteString("// +kubebuilder:object:root=true\n\n")
@@ -271,6 +282,9 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 			sb.WriteString("\tmetav1.TypeMeta   `json:\",inline\"`\n")
 			sb.WriteString("\tmetav1.ObjectMeta `json:\"metadata,omitempty\"`\n")
 		}
+		sort.Slice(structDef.Fields, func(i, j int) bool {
+			return structDef.Fields[i].Name < structDef.Fields[j].Name
+		})
 		for _, field := range structDef.Fields {
 			if !structDef.Root || field.Name == "Spec" || field.Name == "Status" {
 				if field.Description != "" {
