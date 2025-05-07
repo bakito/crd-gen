@@ -1,5 +1,7 @@
 package v1
 
+// +kubebuilder:object:generate=true
+
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
@@ -15,8 +17,3 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
-
-func init() {
-	// Register types with the scheme
-	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
-}
