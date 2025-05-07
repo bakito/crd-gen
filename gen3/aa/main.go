@@ -185,7 +185,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 			case "array":
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
 					nestedName := name + fieldName
-					generateStructs(&prop, nestedName, structMap, path+"."+propName, false)
+					generateStructs(prop.Items.Schema, nestedName, structMap, path+"."+propName, false)
 					fieldType = "[]" + nestedName
 				}
 			default:

@@ -199,7 +199,17 @@ var (
 
 // CertificateSpecAdditionaloutputformats represents a Certificate.spec.additionalOutputFormats
 type CertificateSpecAdditionaloutputformats struct {
+	// Type is the name of the format type that should be written to the
+	// Certificate's target Secret.
+	Type CertificateSpecAdditionaloutputformatsType `json:"type,omitempty"`
 }
+
+type CertificateSpecAdditionaloutputformatsType string
+
+var (
+	CertificateSpecAdditionaloutputformatsTypeDer CertificateSpecAdditionaloutputformatsType = "DER"
+	CertificateSpecAdditionaloutputformatsTypeCombinedpem CertificateSpecAdditionaloutputformatsType = "CombinedPEM"
+)
 
 // CertificateSpecIssuerref represents a Certificate.spec.issuerRef
 type CertificateSpecIssuerref struct {
@@ -350,6 +360,13 @@ type CertificateSpecNameconstraintsPermitted struct {
 
 // CertificateSpecOthernames represents a Certificate.spec.otherNames
 type CertificateSpecOthernames struct {
+	// OID is the object identifier for the otherName SAN.
+	// The object identifier must be expressed as a dotted string, for
+	// example, "1.2.840.113556.1.4.221".
+	Oid string `json:"oid,omitempty"`
+	// utf8Value is the string value of the otherName SAN.
+	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
+	Utf8value string `json:"utf8Value,omitempty"`
 }
 
 // CertificateSpecPrivatekey represents a Certificate.spec.privateKey
@@ -495,5 +512,32 @@ type CertificateStatus struct {
 
 // CertificateStatusConditions represents a Certificate.status.conditions
 type CertificateStatusConditions struct {
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	Lasttransitiontime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Certificate.
+	Observedgeneration int64 `json:"observedGeneration,omitempty"`
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason,omitempty"`
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status CertificateStatusConditionsStatus `json:"status,omitempty"`
+	// Type of the condition, known values are (`Ready`, `Issuing`).
+	Type string `json:"type,omitempty"`
 }
+
+type CertificateStatusConditionsStatus string
+
+var (
+	CertificateStatusConditionsStatusTrue CertificateStatusConditionsStatus = "True"
+	CertificateStatusConditionsStatusFalse CertificateStatusConditionsStatus = "False"
+	CertificateStatusConditionsStatusUnknown CertificateStatusConditionsStatus = "Unknown"
+)
 
