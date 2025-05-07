@@ -40,8 +40,14 @@ type FieldDef struct {
 	Type        string
 	JSONTag     string
 	Description string
-	Enums       []string
+	Enums       []EnumDef
+	EnumName    string
 	EnumType    string
+}
+
+type EnumDef struct {
+	Name  string
+	Value string
 }
 
 // Helper function to convert string to CamelCase.
@@ -134,10 +140,13 @@ func extractSchemas(crd apiv1.CustomResourceDefinition) (*apiv1.JSONSchemaProps,
 }
 
 // Process schema and generate enums.
-func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []string) {
+func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDef) {
 	for _, e := range prop.Enum {
-		val := strings.ReplaceAll(string(e.Raw), `"`, "")
-		enums = append(enums, fieldName+val)
+		val := string(e.Raw)
+		enums = append(enums, EnumDef{
+			Name:  fieldName + toCamelCase(strings.ReplaceAll(val, `"`, "")),
+			Value: val,
+		})
 	}
 	return enums
 }
@@ -197,11 +206,16 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
-			// FIXME
+			nestedName := name + fieldName
+			field.Enums = generateEnum(prop.Items.Schema, nestedName)
+			field.EnumType = prop.Items.Schema.Type
+			fieldType = "[]" + nestedName
+			field.EnumName = nestedName
 		} else if len(prop.Enum) > 0 {
 			nestedName := name + fieldName
 			field.Enums = generateEnum(&prop, nestedName)
 			field.EnumType = prop.Type
+			field.EnumName = nestedName
 			fieldType = nestedName
 		}
 
@@ -268,15 +282,14 @@ func generateGoCode(structMap map[string]*StructDef, packageName, crdKind, crdGr
 		for _, field := range structDef.Fields {
 			if len(field.Enums) > 0 {
 				// Start enum definition
-				_, _ = sb.WriteString(fmt.Sprintf("\ntype %s %s\n\n", field.Type, field.EnumType))
+				_, _ = sb.WriteString(fmt.Sprintf("type %s %s\n\n", field.EnumName, field.EnumType))
 				_, _ = sb.WriteString("var (\n")
 				for _, e := range field.Enums {
-					_, _ = sb.WriteString(fmt.Sprintf("\t%s %s\n", e, field.EnumType))
+					_, _ = sb.WriteString(fmt.Sprintf("\t%s %s = %s\n", e.Name, field.EnumName, e.Value))
 				}
 				_, _ = sb.WriteString(")\n\n")
 			}
 		}
-
 	}
 
 	return sb.String()

@@ -76,7 +76,7 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 	}
 	if in.Usages != nil {
 		in, out := &in.Usages, &out.Usages
-		*out = make([]string, len(*in))
+		*out = make([]CertificateSpecUsages, len(*in))
 		copy(*out, *in)
 	}
 }

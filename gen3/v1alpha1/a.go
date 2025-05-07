@@ -166,8 +166,36 @@ type CertificateSpec struct {
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []string `json:"usages,omitempty"`
+	Usages []CertificateSpecUsages `json:"usages,omitempty"`
 }
+
+type CertificateSpecUsages string
+
+var (
+	CertificateSpecUsagesSigning CertificateSpecUsages = "signing"
+	CertificateSpecUsagesDigitalSignature CertificateSpecUsages = "digital signature"
+	CertificateSpecUsagesContentCommitment CertificateSpecUsages = "content commitment"
+	CertificateSpecUsagesKeyEncipherment CertificateSpecUsages = "key encipherment"
+	CertificateSpecUsagesKeyAgreement CertificateSpecUsages = "key agreement"
+	CertificateSpecUsagesDataEncipherment CertificateSpecUsages = "data encipherment"
+	CertificateSpecUsagesCertSign CertificateSpecUsages = "cert sign"
+	CertificateSpecUsagesCrlSign CertificateSpecUsages = "crl sign"
+	CertificateSpecUsagesEncipherOnly CertificateSpecUsages = "encipher only"
+	CertificateSpecUsagesDecipherOnly CertificateSpecUsages = "decipher only"
+	CertificateSpecUsagesAny CertificateSpecUsages = "any"
+	CertificateSpecUsagesServerAuth CertificateSpecUsages = "server auth"
+	CertificateSpecUsagesClientAuth CertificateSpecUsages = "client auth"
+	CertificateSpecUsagesCodeSigning CertificateSpecUsages = "code signing"
+	CertificateSpecUsagesEmailProtection CertificateSpecUsages = "email protection"
+	CertificateSpecUsagesSMime CertificateSpecUsages = "s/mime"
+	CertificateSpecUsagesIpsecEndSystem CertificateSpecUsages = "ipsec end system"
+	CertificateSpecUsagesIpsecTunnel CertificateSpecUsages = "ipsec tunnel"
+	CertificateSpecUsagesIpsecUser CertificateSpecUsages = "ipsec user"
+	CertificateSpecUsagesTimestamping CertificateSpecUsages = "timestamping"
+	CertificateSpecUsagesOcspSigning CertificateSpecUsages = "ocsp signing"
+	CertificateSpecUsagesMicrosoftSgc CertificateSpecUsages = "microsoft sgc"
+	CertificateSpecUsagesNetscapeSgc CertificateSpecUsages = "netscape sgc"
+)
 
 // CertificateSpecAdditionaloutputformats represents a Certificate.spec.additionalOutputFormats
 type CertificateSpecAdditionaloutputformats struct {
@@ -263,13 +291,12 @@ type CertificateSpecKeystoresPkcs12 struct {
 	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
 
-
 type CertificateSpecKeystoresPkcs12Profile string
 
 var (
-	CertificateSpecKeystoresPkcs12ProfileLegacyRC2 string
-	CertificateSpecKeystoresPkcs12ProfileLegacyDES string
-	CertificateSpecKeystoresPkcs12ProfileModern2023 string
+	CertificateSpecKeystoresPkcs12ProfileLegacyrc2 CertificateSpecKeystoresPkcs12Profile = "LegacyRC2"
+	CertificateSpecKeystoresPkcs12ProfileLegacydes CertificateSpecKeystoresPkcs12Profile = "LegacyDES"
+	CertificateSpecKeystoresPkcs12ProfileModern2023 CertificateSpecKeystoresPkcs12Profile = "Modern2023"
 )
 
 // CertificateSpecKeystoresPkcs12Passwordsecretref represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
@@ -365,29 +392,26 @@ type CertificateSpecPrivatekey struct {
 	Size int64 `json:"size,omitempty"`
 }
 
-
 type CertificateSpecPrivatekeyAlgorithm string
 
 var (
-	CertificateSpecPrivatekeyAlgorithmRSA string
-	CertificateSpecPrivatekeyAlgorithmECDSA string
-	CertificateSpecPrivatekeyAlgorithmEd25519 string
+	CertificateSpecPrivatekeyAlgorithmRsa CertificateSpecPrivatekeyAlgorithm = "RSA"
+	CertificateSpecPrivatekeyAlgorithmEcdsa CertificateSpecPrivatekeyAlgorithm = "ECDSA"
+	CertificateSpecPrivatekeyAlgorithmEd25519 CertificateSpecPrivatekeyAlgorithm = "Ed25519"
 )
-
 
 type CertificateSpecPrivatekeyEncoding string
 
 var (
-	CertificateSpecPrivatekeyEncodingPKCS1 string
-	CertificateSpecPrivatekeyEncodingPKCS8 string
+	CertificateSpecPrivatekeyEncodingPkcs1 CertificateSpecPrivatekeyEncoding = "PKCS1"
+	CertificateSpecPrivatekeyEncodingPkcs8 CertificateSpecPrivatekeyEncoding = "PKCS8"
 )
-
 
 type CertificateSpecPrivatekeyRotationpolicy string
 
 var (
-	CertificateSpecPrivatekeyRotationpolicyNever string
-	CertificateSpecPrivatekeyRotationpolicyAlways string
+	CertificateSpecPrivatekeyRotationpolicyNever CertificateSpecPrivatekeyRotationpolicy = "Never"
+	CertificateSpecPrivatekeyRotationpolicyAlways CertificateSpecPrivatekeyRotationpolicy = "Always"
 )
 
 // CertificateSpecSecrettemplate represents a Certificate.spec.secretTemplate
