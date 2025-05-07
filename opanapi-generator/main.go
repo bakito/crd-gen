@@ -180,10 +180,10 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 					generateStructs(&prop, nestedName, structMap, path+"."+propName, false)
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
-						fieldType = "map[string]" + prop.AdditionalProperties.Schema.Type
+						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema)
 					} else {
 						// Object with no properties, use map
-						fieldType = "map[string]interface{}"
+						fieldType = "map[string]any"
 					}
 				}
 			case "array":
