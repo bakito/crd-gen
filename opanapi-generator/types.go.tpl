@@ -28,17 +28,18 @@ type {{ .Kind }} struct {
 }
 
 {{ range $_, $struct := .Structs }}
-{{- if $struct.Description }}// {{ $struct.Description  }}{{ end }}
+{{ if $struct.Description }}// {{ $struct.Description  }}{{ end }}
 type {{ $struct.Name }} struct {
 	{{- range $_, $field :=  $struct.Fields }}
 	{{ if $field.Description }}// {{ $field.Description }}{{ end}}
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
 	{{- end }}
 }
-{{""}}
+{{ end }}
+
+{{- range $_, $struct := .Structs }}
 {{- range $_, $field :=  $struct.Fields }}
 {{- if $field.Enums }}
-{{""}}
 // {{ $field.EnumName }} represents an enumeration for {{ $field.Name }}
 type {{ $field.EnumName }} {{ $field.EnumType }}
 
@@ -50,4 +51,4 @@ var (
 )
 {{ end }}
 {{- end }}
-{{ end }}
+{{- end }}

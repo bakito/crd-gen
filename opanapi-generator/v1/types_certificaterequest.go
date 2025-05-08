@@ -31,6 +31,7 @@ type CertificateRequest struct {
 	Status CertificateRequestStatus `json:"status,omitempty"`
 }
 
+
 // CertificateRequestSpec represents a CertificateRequest.spec
 type CertificateRequestSpec struct {
 	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
@@ -86,6 +87,54 @@ type CertificateRequestSpec struct {
 	Username string `json:"username,omitempty"`
 }
 
+// CertificateRequestSpecIssuerref represents a CertificateRequest.spec.issuerRef
+type CertificateRequestSpecIssuerref struct {
+	// Group of the resource being referred to.
+	Group string `json:"group,omitempty"`
+	// Kind of the resource being referred to.
+	Kind string `json:"kind,omitempty"`
+	// Name of the resource being referred to.
+	Name string `json:"name,omitempty"`
+}
+
+// CertificateRequestStatus represents a CertificateRequest.status
+type CertificateRequestStatus struct {
+	// The PEM encoded X.509 certificate of the signer, also known as the CA
+	// (Certificate Authority).
+	// This is set on a best-effort basis by different issuers.
+	// If not set, the CA is assumed to be unknown/not available.
+	Ca []byte `json:"ca,omitempty"`
+	// The PEM encoded X.509 certificate resulting from the certificate
+	// signing request.
+	// If not set, the CertificateRequest has either not been completed or has
+	// failed. More information on failure can be found by checking the
+	// `conditions` field.
+	Certificate []byte `json:"certificate,omitempty"`
+	// List of status conditions to indicate the status of a CertificateRequest.
+	// Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
+	Conditions []CertificateRequestStatusConditions `json:"conditions,omitempty"`
+	// FailureTime stores the time that this CertificateRequest failed. This is
+	// used to influence garbage collection and back-off.
+	Failuretime metav1.Time `json:"failureTime,omitempty"`
+}
+
+// CertificateRequestStatusConditions represents a CertificateRequest.status.conditions
+type CertificateRequestStatusConditions struct {
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	Lasttransitiontime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason,omitempty"`
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status CertificateRequestStatusConditionsStatus `json:"status,omitempty"`
+	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
+	// `Approved`, `Denied`).
+	Type string `json:"type,omitempty"`
+}
 
 // CertificateRequestSpecUsages represents an enumeration for Usages
 type CertificateRequestSpecUsages string
@@ -139,56 +188,6 @@ var (
 	CertificateRequestSpecUsagesNetscapeSgc CertificateRequestSpecUsages = "netscape sgc"
 )
 
-// CertificateRequestSpecIssuerref represents a CertificateRequest.spec.issuerRef
-type CertificateRequestSpecIssuerref struct {
-	// Group of the resource being referred to.
-	Group string `json:"group,omitempty"`
-	// Kind of the resource being referred to.
-	Kind string `json:"kind,omitempty"`
-	// Name of the resource being referred to.
-	Name string `json:"name,omitempty"`
-}
-
-// CertificateRequestStatus represents a CertificateRequest.status
-type CertificateRequestStatus struct {
-	// The PEM encoded X.509 certificate of the signer, also known as the CA
-	// (Certificate Authority).
-	// This is set on a best-effort basis by different issuers.
-	// If not set, the CA is assumed to be unknown/not available.
-	Ca []byte `json:"ca,omitempty"`
-	// The PEM encoded X.509 certificate resulting from the certificate
-	// signing request.
-	// If not set, the CertificateRequest has either not been completed or has
-	// failed. More information on failure can be found by checking the
-	// `conditions` field.
-	Certificate []byte `json:"certificate,omitempty"`
-	// List of status conditions to indicate the status of a CertificateRequest.
-	// Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
-	Conditions []CertificateRequestStatusConditions `json:"conditions,omitempty"`
-	// FailureTime stores the time that this CertificateRequest failed. This is
-	// used to influence garbage collection and back-off.
-	Failuretime metav1.Time `json:"failureTime,omitempty"`
-}
-
-// CertificateRequestStatusConditions represents a CertificateRequest.status.conditions
-type CertificateRequestStatusConditions struct {
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	Lasttransitiontime metav1.Time `json:"lastTransitionTime,omitempty"`
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	Message string `json:"message,omitempty"`
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	Reason string `json:"reason,omitempty"`
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateRequestStatusConditionsStatus `json:"status,omitempty"`
-	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
-	// `Approved`, `Denied`).
-	Type string `json:"type,omitempty"`
-}
-
-
 // CertificateRequestStatusConditionsStatus represents an enumeration for Status
 type CertificateRequestStatusConditionsStatus string
 
@@ -200,5 +199,3 @@ var (
 	// CertificateRequestStatusConditionsStatusUnknown Status enum value "Unknown"
 	CertificateRequestStatusConditionsStatusUnknown CertificateRequestStatusConditionsStatus = "Unknown"
 )
-
-
