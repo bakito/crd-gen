@@ -8,7 +8,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // +kubebuilder:object:root=true
 
-// CertificateRequestList is a list of CertificateRequests. 
+// CertificateRequestList is a list of Certificaterequests.
 type CertificateRequestList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
