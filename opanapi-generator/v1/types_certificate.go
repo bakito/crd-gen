@@ -6,14 +6,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Generated from Certificate.cert-manager.io/v1 CRD
 
-func init() {
-	// Register types with the scheme
-	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
-}
-
 // +kubebuilder:object:root=true
 
-// CertificateList is a list of Certificates. 
+// CertificateList is a list of Certificates.
 type CertificateList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -183,6 +178,7 @@ type CertificateSpec struct {
 	Usages []CertificateSpecUsages `json:"usages,omitempty"`
 }
 
+
 // CertificateSpecUsages represents an enumeration for Usages
 type CertificateSpecUsages string
 
@@ -241,6 +237,7 @@ type CertificateSpecAdditionaloutputformats struct {
 	// Certificate's target Secret.
 	Type CertificateSpecAdditionaloutputformatsType `json:"type,omitempty"`
 }
+
 
 // CertificateSpecAdditionaloutputformatsType represents an enumeration for Type
 type CertificateSpecAdditionaloutputformatsType string
@@ -341,6 +338,7 @@ type CertificateSpecKeystoresPkcs12 struct {
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
 	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
+
 
 // CertificateSpecKeystoresPkcs12Profile represents an enumeration for Profile
 type CertificateSpecKeystoresPkcs12Profile string
@@ -454,6 +452,7 @@ type CertificateSpecPrivatekey struct {
 	Size int64 `json:"size,omitempty"`
 }
 
+
 // CertificateSpecPrivatekeyAlgorithm represents an enumeration for Algorithm
 type CertificateSpecPrivatekeyAlgorithm string
 
@@ -466,6 +465,7 @@ var (
 	CertificateSpecPrivatekeyAlgorithmEd25519 CertificateSpecPrivatekeyAlgorithm = "Ed25519"
 )
 
+
 // CertificateSpecPrivatekeyEncoding represents an enumeration for Encoding
 type CertificateSpecPrivatekeyEncoding string
 
@@ -475,6 +475,7 @@ var (
 	// CertificateSpecPrivatekeyEncodingPkcs8 Encoding enum value "PKCS8"
 	CertificateSpecPrivatekeyEncodingPkcs8 CertificateSpecPrivatekeyEncoding = "PKCS8"
 )
+
 
 // CertificateSpecPrivatekeyRotationpolicy represents an enumeration for Rotationpolicy
 type CertificateSpecPrivatekeyRotationpolicy string
@@ -588,6 +589,7 @@ type CertificateStatusConditions struct {
 	Type string `json:"type,omitempty"`
 }
 
+
 // CertificateStatusConditionsStatus represents an enumeration for Status
 type CertificateStatusConditionsStatus string
 
@@ -599,4 +601,5 @@ var (
 	// CertificateStatusConditionsStatusUnknown Status enum value "Unknown"
 	CertificateStatusConditionsStatusUnknown CertificateStatusConditionsStatus = "Unknown"
 )
+
 

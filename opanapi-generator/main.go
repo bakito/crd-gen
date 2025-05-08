@@ -189,7 +189,7 @@ func prepareDescription(desc string, field bool) string {
 	if field {
 		indent = "\t" + indent
 	}
-	return strings.ReplaceAll(desc, "\n", fmt.Sprintf("\n%s", indent))
+	return strings.ReplaceAll(desc, "\n", "\n"+indent)
 }
 
 var (

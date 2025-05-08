@@ -4,16 +4,11 @@ package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// Generated from CertificateRequest.cert-manager.io/v1 CRD
-
-func init() {
-	// Register types with the scheme
-	SchemeBuilder.Register(&CertificateRequest{}, &CertificateRequestList{})
-}
+// Generated from Certificate.cert-manager.io/v1 CRD
 
 // +kubebuilder:object:root=true
 
-// CertificateRequestList is a list of CertificateRequests. 
+// CertificateRequestList is a list of Certificaterequests.
 type CertificateRequestList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -90,6 +85,7 @@ type CertificateRequestSpec struct {
 	// Populated by the cert-manager webhook on creation and immutable.
 	Username string `json:"username,omitempty"`
 }
+
 
 // CertificateRequestSpecUsages represents an enumeration for Usages
 type CertificateRequestSpecUsages string
@@ -192,6 +188,7 @@ type CertificateRequestStatusConditions struct {
 	Type string `json:"type,omitempty"`
 }
 
+
 // CertificateRequestStatusConditionsStatus represents an enumeration for Status
 type CertificateRequestStatusConditionsStatus string
 
@@ -203,4 +200,5 @@ var (
 	// CertificateRequestStatusConditionsStatusUnknown Status enum value "Unknown"
 	CertificateRequestStatusConditionsStatusUnknown CertificateRequestStatusConditionsStatus = "Unknown"
 )
+
 
