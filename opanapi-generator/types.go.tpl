@@ -23,17 +23,30 @@ type {{ .Kind }} struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	{{- range .Root.Fields }}
 	{{ if .Description }}// {{ .Description }}{{ end}}
-	{{ .Name }} {{ .Type }} `json:{{ .JSONTag }},omitempty`
+	{{ .Name }} {{ .Type }} `json:"{{ .JSONTag }},omitempty"`
 	{{- end }}
 }
+{{ "" }}
+{{ range $_, $struct := .Structs }}
+{{- if $struct.Description }}// {{ $struct.Description  }}{{ end }}
+type {{ $struct.Name }} struct {
+	{{- range $_, $field :=  $struct.Fields }}
+	{{ if $field.Description }}// {{ $field.Description }}{{ end}}
+	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
+	{{- end }}
+}
+{{ "" }}
+{{- range $_, $field :=  $struct.Fields }}
+{{- if $field.Enums }}
+// {{ $field.EnumName }} represents an enumeration for {{ $field.Name }}
+type {{ $field.EnumName }} {{ $field.EnumType }}
 
-dadsfasdfsadf
-{{ range .Structs }}
-{{ if .Description }}// {{ .Description  }}{{ end }}
-type {{ .Name }} struct {
-	{{- range .Fields }}
-	{{ if .Description }}// {{ .Description }}{{ end}}
-	{{ .Name }} {{ .Type }} `json:{{ .JSONTag }},omitempty`
-	{{- end }}
-}
+var (
+{{- range $field.Enums }}
+	// {{ .Name }} {{ $field.Name }} enum value {{ .Value }}
+	{{ .Name }} {{ $field.EnumName }} = {{ .Value }}
+{{- end }}
+)
+{{- end }}
+{{ end }}
 {{ end }}

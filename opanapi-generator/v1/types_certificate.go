@@ -6,9 +6,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Generated from Certificate.cert-manager.io/v1 CRD
 
+func init() {
+	// Register types with the scheme
+	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
+}
+
 // +kubebuilder:object:root=true
 
-// CertificateList is a list of Certificates.
+// CertificateList is a list of Certificates. 
 type CertificateList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
