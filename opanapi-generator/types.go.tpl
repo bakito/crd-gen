@@ -2,7 +2,11 @@
 
 package {{ .Version }}
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+{{- range .Imports }}
+    {{ . }}
+{{- end }}
+)
 
 // Generated from Certificate.cert-manager.io/v1 CRD
 

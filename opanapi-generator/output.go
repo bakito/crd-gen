@@ -19,12 +19,18 @@ var (
 )
 
 // Generate Go code from struct definitions.
-func generateTypesCode(structMap map[string]*StructDef, version, crdKind, plural, crdGroup, crdList string) string {
+func generateTypesCode(
+	structMap map[string]*StructDef,
+	version, crdKind, plural, crdGroup, crdList string,
+	imports map[string]bool,
+) string {
 	// Sort and generate structs
 	sortedStructNames := slices.Sorted(maps.Keys(structMap))
 
 	var root *StructDef
 	var structs []*StructDef
+
+	importList := slices.Sorted(maps.Keys(imports))
 
 	for _, structName := range sortedStructNames {
 		structDef := structMap[structName]
@@ -65,6 +71,7 @@ func generateTypesCode(structMap map[string]*StructDef, version, crdKind, plural
 		"Plural":  toCamelCase(plural),
 		"Root":    root,
 		"Structs": structs,
+		"Imports": importList,
 	}); err != nil {
 		println(err)
 	}

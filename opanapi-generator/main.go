@@ -111,7 +111,14 @@ func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDe
 }
 
 // Process schema and generate structs.
-func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[string]*StructDef, path string, root bool) {
+func generateStructs(
+	schema *apiv1.JSONSchemaProps,
+	name string,
+	structMap map[string]*StructDef,
+	path string,
+	root bool,
+	imports map[string]bool,
+) {
 	structDef := &StructDef{
 		Root:        root,
 		Name:        name,
@@ -132,7 +139,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 				if len(prop.Properties) > 0 {
 					nestedName := name + fieldName
 					fieldType = nestedName
-					generateStructs(&prop, nestedName, structMap, path+"."+propName, false)
+					generateStructs(&prop, nestedName, structMap, path+"."+propName, false, imports)
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
 						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema)
@@ -144,7 +151,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 			case "array":
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
 					nestedName := name + fieldName
-					generateStructs(prop.Items.Schema, nestedName, structMap, path+"."+propName, false)
+					generateStructs(prop.Items.Schema, nestedName, structMap, path+"."+propName, false, imports)
 					fieldType = "[]" + nestedName
 				}
 			default:
@@ -155,7 +162,8 @@ func generateStructs(schema *apiv1.JSONSchemaProps, name string, structMap map[s
 			parts := strings.Split(*prop.Ref, "/")
 			fieldType = toCamelCase(parts[len(parts)-1])
 		} else {
-			fieldType = "any"
+			fieldType = "*apiextensionsv1.JSON"
+			imports[`apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"`] = true
 		}
 
 		field := FieldDef{
@@ -268,10 +276,11 @@ func main() {
 
 		// Generate structs
 		structMap := make(map[string]*StructDef)
-		generateStructs(schema, crdKind, structMap, crdKind, true)
+		imports := map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true}
+		generateStructs(schema, crdKind, structMap, crdKind, true, imports)
 
 		// Generate types code
-		typesCode := generateTypesCode(structMap, version, crdKind, crdPlural, crdGroup, crdList)
+		typesCode := generateTypesCode(structMap, version, crdKind, crdPlural, crdGroup, crdList, imports)
 
 		// Write output file
 		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))

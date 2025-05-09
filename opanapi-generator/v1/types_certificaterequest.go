@@ -2,7 +2,9 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // Generated from Certificate.cert-manager.io/v1 CRD
 

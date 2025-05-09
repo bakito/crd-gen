@@ -24,5 +24,6 @@ func init() {
 	// Register types with the scheme
 	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
 	SchemeBuilder.Register(&CertificateRequest{}, &CertificateRequestList{})
+	SchemeBuilder.Register(&ClusterIssuer{}, &ClusterIssuerList{})
 }
 
