@@ -312,8 +312,15 @@ func main() {
 
 func writeFiles(files []outFile) {
 	for _, f := range files {
-		err := os.WriteFile(f.name, []byte(f.content), 0o644)
-		if err != nil {
+		dir := filepath.Dir(f.name)
+
+		// Create the directory if it doesn't exist
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			slog.Error("Error creating directory", "error", err)
+			return
+		}
+
+		if err := os.WriteFile(f.name, []byte(f.content), 0o644); err != nil {
 			slog.Error("Error writing output file", "error", err)
 			return
 		}
