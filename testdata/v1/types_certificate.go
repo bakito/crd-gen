@@ -265,7 +265,7 @@ type CertificateSpecKeystoresPkcs12 struct {
 	// containing the password used to encrypt the PKCS#12 keystore.
 	// Mutually exclusive with password.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	PasswordSecretRef CertificateSpecKeystoresPkcs12PasswordSecretRef `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef CertificateSpecKeystoresJksPasswordSecretRef `json:"passwordSecretRef,omitempty"`
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	// 
@@ -278,17 +278,6 @@ type CertificateSpecKeystoresPkcs12 struct {
 	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
 
-// CertificateSpecKeystoresPkcs12PasswordSecretRef represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
-type CertificateSpecKeystoresPkcs12PasswordSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
 // CertificateSpecNameConstraints represents a Certificate.spec.nameConstraints
 type CertificateSpecNameConstraints struct {
 	// if true then the name constraints are marked critical.
@@ -298,24 +287,11 @@ type CertificateSpecNameConstraints struct {
 	// of information appearing in the permitted
 	Excluded CertificateSpecNameConstraintsExcluded `json:"excluded,omitempty"`
 	// Permitted contains the constraints in which the names must be located.
-	Permitted CertificateSpecNameConstraintsPermitted `json:"permitted,omitempty"`
+	Permitted CertificateSpecNameConstraintsExcluded `json:"permitted,omitempty"`
 }
 
 // CertificateSpecNameConstraintsExcluded represents a Certificate.spec.nameConstraints.excluded
 type CertificateSpecNameConstraintsExcluded struct {
-	// DNSDomains is a list of DNS domains that are permitted or excluded.
-	DnsDomains []string `json:"dnsDomains,omitempty"`
-	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
-	EmailAddresses []string `json:"emailAddresses,omitempty"`
-	// IPRanges is a list of IP Ranges that are permitted or excluded.
-	// This should be a valid CIDR notation.
-	IpRanges []string `json:"ipRanges,omitempty"`
-	// URIDomains is a list of URI domains that are permitted or excluded.
-	UriDomains []string `json:"uriDomains,omitempty"`
-}
-
-// CertificateSpecNameConstraintsPermitted represents a Certificate.spec.nameConstraints.permitted
-type CertificateSpecNameConstraintsPermitted struct {
 	// DNSDomains is a list of DNS domains that are permitted or excluded.
 	DnsDomains []string `json:"dnsDomains,omitempty"`
 	// EmailAddresses is a list of Email Addresses that are permitted or excluded.

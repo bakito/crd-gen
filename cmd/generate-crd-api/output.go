@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"github.com/bakito/crd-gen/internal/openapi"
 )
 
 const myName = "opanapi-generator"
@@ -19,45 +21,30 @@ var (
 )
 
 // Generate Go code from struct definitions.
-func generateTypesCode(
-	structMap map[string]*StructDef,
-	version, crdKind, plural, crdGroup, crdList string,
-	imports map[string]bool,
-) string {
+func generateTypesCode(cr *openapi.CustomResource) string {
 	// Sort and generate structs
-	sortedStructNames := slices.Sorted(maps.Keys(structMap))
+	sortedStructNames := slices.Sorted(maps.Keys(cr.Structs))
 
-	var root *StructDef
-	var structs []*StructDef
+	var structs []*openapi.StructDef
 
-	importList := slices.Sorted(maps.Keys(imports))
+	importList := slices.Sorted(maps.Keys(cr.Imports))
+
+	prepare(cr.Root)
+
+	// keep only spec and status
+	var rootFields []openapi.FieldDef
+	for _, field := range cr.Root.Fields {
+		if field.JSONTag == "spec" || field.JSONTag == "status" {
+			rootFields = append(rootFields, field)
+		}
+	}
+	cr.Root.Fields = rootFields
 
 	for _, structName := range sortedStructNames {
-		structDef := structMap[structName]
+		structDef := cr.Structs[structName]
+		prepare(structDef)
 
-		structDef.Description = prepareDescription(structDef.Description, false)
-
-		sort.Slice(structDef.Fields, func(i, j int) bool {
-			return structDef.Fields[i].Name < structDef.Fields[j].Name
-		})
-
-		for i, f := range structDef.Fields {
-			structDef.Fields[i].Description = prepareDescription(f.Description, true)
-		}
-
-		if structName == crdKind {
-			// keep only spec and status
-			var rootFields []FieldDef
-			for _, field := range structDef.Fields {
-				if field.JSONTag == "spec" || field.JSONTag == "status" {
-					rootFields = append(rootFields, field)
-				}
-			}
-			root = structDef
-			root.Fields = rootFields
-		} else {
-			structs = append(structs, structDef)
-		}
+		structs = append(structs, structDef)
 	}
 
 	var sb strings.Builder
@@ -65,11 +52,11 @@ func generateTypesCode(
 	if err := t.Execute(&sb, map[string]any{
 		"AppName": myName,
 		"Version": version,
-		"Group":   crdGroup,
-		"Kind":    crdKind,
-		"List":    crdList,
-		"Plural":  toCamelCase(plural),
-		"Root":    root,
+		"Group":   cr.Group,
+		"Kind":    cr.Kind,
+		"List":    cr.List,
+		"Plural":  openapi.ToCamelCase(cr.Plural),
+		"Root":    cr.Root,
 		"Structs": structs,
 		"Imports": importList,
 	}); err != nil {
@@ -78,7 +65,19 @@ func generateTypesCode(
 	return sb.String()
 }
 
-func generateGroupVersionInfoCode(group, version string, names []CRDNames) (string, error) {
+func prepare(structDef *openapi.StructDef) {
+	structDef.Description = prepareDescription(structDef.Description, false)
+
+	sort.Slice(structDef.Fields, func(i, j int) bool {
+		return structDef.Fields[i].Name < structDef.Fields[j].Name
+	})
+
+	for i, f := range structDef.Fields {
+		structDef.Fields[i].Description = prepareDescription(f.Description, true)
+	}
+}
+
+func generateGroupVersionInfoCode(group, version string, names []openapi.CRDNames) (string, error) {
 	var sb strings.Builder
 	t := template.Must(template.New("group_version_into.go.tpl").Parse(gviTpl))
 	if err := t.Execute(&sb, map[string]any{

@@ -61,7 +61,7 @@ type CertificateRequestSpec struct {
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	IssuerRef CertificateRequestSpecIssuerRef `json:"issuerRef,omitempty"`
+	IssuerRef CertificateSpecIssuerRef `json:"issuerRef,omitempty"`
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	// 
@@ -87,16 +87,6 @@ type CertificateRequestSpec struct {
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
 	Username string `json:"username,omitempty"`
-}
-
-// CertificateRequestSpecIssuerRef represents a CertificateRequest.spec.issuerRef
-type CertificateRequestSpecIssuerRef struct {
-	// Group of the resource being referred to.
-	Group string `json:"group,omitempty"`
-	// Kind of the resource being referred to.
-	Kind string `json:"kind,omitempty"`
-	// Name of the resource being referred to.
-	Name string `json:"name,omitempty"`
 }
 
 // CertificateRequestStatus represents a CertificateRequest.status
