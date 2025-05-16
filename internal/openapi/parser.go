@@ -94,9 +94,24 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				}
 			case "array":
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
-					nestedName := name + fieldName
-					generateStructs(prop.Items.Schema, cr, nestedName, path+"."+propName, false)
-					fieldType = "[]" + nestedName
+					signature := sign(prop.Items.Schema.Properties)
+
+					if ft, ok := cr.structSignatures[signature]; ok {
+						fieldType = "[]" + ft
+					} else {
+						kindFieldName := cr.Kind + fieldName
+						var trueFieldName string
+						if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
+							cr.structNamesCnt[kindFieldName] = cnt + 1
+						} else {
+							trueFieldName = kindFieldName
+							cr.structNamesCnt[kindFieldName] = 1
+						}
+						fieldType = "[]" + trueFieldName
+						cr.structSignatures[signature] = fieldType
+						generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
+					}
 				}
 			default:
 				fieldType = mapType(prop)

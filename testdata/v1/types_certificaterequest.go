@@ -34,6 +34,24 @@ type CertificateRequest struct {
 }
 
 
+// CertificateRequestConditions represents a CertificateRequest.status.conditions
+type CertificateRequestConditions struct {
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason,omitempty"`
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status CertificateRequestConditionsStatus `json:"status,omitempty"`
+	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
+	// `Approved`, `Denied`).
+	Type string `json:"type,omitempty"`
+}
+
 // CertificateRequestIssuerRef represents a CertificateRequest.spec.issuerRef
 type CertificateRequestIssuerRef struct {
 	// Group of the resource being referred to.
@@ -114,29 +132,23 @@ type CertificateRequestStatus struct {
 	Certificate []byte `json:"certificate,omitempty"`
 	// List of status conditions to indicate the status of a CertificateRequest.
 	// Known condition types are `Ready`, `InvalidRequest`, `Approved` and `Denied`.
-	Conditions []CertificateRequestStatusConditions `json:"conditions,omitempty"`
+	Conditions []CertificateRequestConditions `json:"conditions,omitempty"`
 	// FailureTime stores the time that this CertificateRequest failed. This is
 	// used to influence garbage collection and back-off.
 	FailureTime metav1.Time `json:"failureTime,omitempty"`
 }
 
-// CertificateRequestStatusConditions represents a CertificateRequest.status.conditions
-type CertificateRequestStatusConditions struct {
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	Message string `json:"message,omitempty"`
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	Reason string `json:"reason,omitempty"`
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateRequestStatusConditionsStatus `json:"status,omitempty"`
-	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
-	// `Approved`, `Denied`).
-	Type string `json:"type,omitempty"`
-}
+// CertificateRequestConditionsStatus represents an enumeration for Status
+type CertificateRequestConditionsStatus string
+
+var (
+	// CertificateRequestConditionsStatusTrue Status enum value "True"
+	CertificateRequestConditionsStatusTrue CertificateRequestConditionsStatus = "True"
+	// CertificateRequestConditionsStatusFalse Status enum value "False"
+	CertificateRequestConditionsStatusFalse CertificateRequestConditionsStatus = "False"
+	// CertificateRequestConditionsStatusUnknown Status enum value "Unknown"
+	CertificateRequestConditionsStatusUnknown CertificateRequestConditionsStatus = "Unknown"
+)
 
 // CertificateRequestSpecUsages represents an enumeration for Usages
 type CertificateRequestSpecUsages string
@@ -188,17 +200,5 @@ var (
 	CertificateRequestSpecUsagesMicrosoftSgc CertificateRequestSpecUsages = "microsoft sgc"
 	// CertificateRequestSpecUsagesNetscapeSgc Usages enum value "netscape sgc"
 	CertificateRequestSpecUsagesNetscapeSgc CertificateRequestSpecUsages = "netscape sgc"
-)
-
-// CertificateRequestStatusConditionsStatus represents an enumeration for Status
-type CertificateRequestStatusConditionsStatus string
-
-var (
-	// CertificateRequestStatusConditionsStatusTrue Status enum value "True"
-	CertificateRequestStatusConditionsStatusTrue CertificateRequestStatusConditionsStatus = "True"
-	// CertificateRequestStatusConditionsStatusFalse Status enum value "False"
-	CertificateRequestStatusConditionsStatusFalse CertificateRequestStatusConditionsStatus = "False"
-	// CertificateRequestStatusConditionsStatusUnknown Status enum value "Unknown"
-	CertificateRequestStatusConditionsStatusUnknown CertificateRequestStatusConditionsStatus = "Unknown"
 )
 
