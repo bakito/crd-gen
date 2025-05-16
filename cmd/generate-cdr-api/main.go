@@ -9,9 +9,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bakito/extract-crd-api/internal/flags"
 	apiv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/bakito/crd-gen/internal/flags"
 )
 
 // Helper function to convert string to CamelCase.

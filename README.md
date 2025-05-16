@@ -1,11 +1,30 @@
-# extract-crd-api
+## generate-crd-api
 
 ## Usage
 
 go 1.24+
 
 ```bash
-go get -tool github.com/bakito/extract-crd-api/cmd/extract-crd-api@latest
+go get -tool github.com/bakito/crd-gen/cmd/generate-crd-api@latest
+```
+
+```go
+//go:build generate
+// +build generate
+
+//go:generate go tool generate-crd-api -target . -crd certificates.cert-manager.io.yaml -crd certificaterequests.cert-manager.io.yaml -crd clusterissuers.cert-manager.io.yaml
+
+package crd_gen
+```
+
+## extract-crd-api
+
+## Usage
+
+go 1.24+
+
+```bash
+go get -tool github.com/bakito/crd-gen/cmd/extract-crd-api@latest
 ```
 
 ```go

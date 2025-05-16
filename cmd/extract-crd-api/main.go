@@ -9,9 +9,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bakito/extract-crd-api/internal/flags"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+
+	"github.com/bakito/crd-gen/internal/flags"
 )
 
 var (
