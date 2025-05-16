@@ -40,7 +40,7 @@ func (in *Certificate) DeepCopyObject() runtime.Object {
 func (in *CertificateList) DeepCopyInto(out *CertificateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Certificate, len(*in))
@@ -99,7 +99,7 @@ func (in *CertificateRequest) DeepCopyObject() runtime.Object {
 func (in *CertificateRequestList) DeepCopyInto(out *CertificateRequestList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]CertificateRequest, len(*in))
@@ -672,7 +672,7 @@ func (in *ClusterIssuer) DeepCopyObject() runtime.Object {
 func (in *ClusterIssuerList) DeepCopyInto(out *ClusterIssuerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterIssuer, len(*in))

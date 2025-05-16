@@ -13,8 +13,8 @@ import (
 
 // ClusterIssuerList is a list of Clusterissuers.
 type ClusterIssuerList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items []ClusterIssuer `json:"items"`
 }
 
@@ -2592,3 +2592,4 @@ var (
 	// ClusterIssuerStatusConditionsStatusUnknown Status enum value "Unknown"
 	ClusterIssuerStatusConditionsStatusUnknown ClusterIssuerStatusConditionsStatus = "Unknown"
 )
+

@@ -12,8 +12,8 @@ import (
 
 // CertificateList is a list of Certificates.
 type CertificateList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items []Certificate `json:"items"`
 }
 
@@ -597,3 +597,4 @@ var (
 	// CertificateStatusConditionsStatusUnknown Status enum value "Unknown"
 	CertificateStatusConditionsStatusUnknown CertificateStatusConditionsStatus = "Unknown"
 )
+
