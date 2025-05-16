@@ -42,7 +42,7 @@ type CertificateSpec struct {
 	// This is a Beta Feature enabled by default. It can be disabled with the
 	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
 	// the controller and webhook components.
-	Additionaloutputformats []CertificateSpecAdditionaloutputformats `json:"additionalOutputFormats,omitempty"`
+	AdditionalOutputFormats []CertificateSpecAdditionalOutputFormats `json:"additionalOutputFormats,omitempty"`
 	// Requested common name X509 certificate subject attribute.
 	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
 	// NOTE: TLS clients will ignore this value when any subject alternative name is
@@ -50,9 +50,9 @@ type CertificateSpec struct {
 	// 
 	// Should have a length of 64 characters or fewer to avoid generating invalid CSRs.
 	// Cannot be set if the `literalSubject` field is set.
-	Commonname string `json:"commonName,omitempty"`
+	CommonName string `json:"commonName,omitempty"`
 	// Requested DNS subject alternative names.
-	Dnsnames []string `json:"dnsNames,omitempty"`
+	DnsNames []string `json:"dnsNames,omitempty"`
 	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
 	// issuer may choose to ignore the requested duration, just like any other
 	// requested attribute.
@@ -62,14 +62,14 @@ type CertificateSpec struct {
 	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
 	Duration string `json:"duration,omitempty"`
 	// Requested email subject alternative names.
-	Emailaddresses []string `json:"emailAddresses,omitempty"`
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
 	// Whether the KeyUsage and ExtKeyUsage extensions should be set in the encoded CSR.
 	// 
 	// This option defaults to true, and should only be disabled if the target
 	// issuer does not support CSRs with these X509 KeyUsage/ ExtKeyUsage extensions.
-	Encodeusagesinrequest bool `json:"encodeUsagesInRequest,omitempty"`
+	EncodeUsagesInRequest bool `json:"encodeUsagesInRequest,omitempty"`
 	// Requested IP address subject alternative names.
-	Ipaddresses []string `json:"ipAddresses,omitempty"`
+	IpAddresses []string `json:"ipAddresses,omitempty"`
 	// Requested basic constraints isCA value.
 	// The isCA value is used to set the `isCA` field on the created CertificateRequest
 	// resources. Note that the issuer may choose to ignore the requested isCA value, just
@@ -77,14 +77,14 @@ type CertificateSpec struct {
 	// 
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
-	Isca bool `json:"isCA,omitempty"`
+	IsCA bool `json:"isCA,omitempty"`
 	// Reference to the issuer responsible for issuing the certificate.
 	// If the issuer is namespace-scoped, it must be in the same namespace
 	// as the Certificate. If the issuer is cluster-scoped, it can be used
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	Issuerref CertificateSpecIssuerref `json:"issuerRef,omitempty"`
+	IssuerRef CertificateSpecIssuerRef `json:"issuerRef,omitempty"`
 	// Additional keystore output formats to be stored in the Certificate's Secret.
 	Keystores CertificateSpecKeystores `json:"keystores,omitempty"`
 	// Requested X.509 certificate subject, represented using the LDAP "String
@@ -97,22 +97,22 @@ type CertificateSpec struct {
 	// More info: https://github.com/cert-manager/cert-manager/issues/4424
 	// 
 	// Cannot be set if the `subject` or `commonName` field is set.
-	Literalsubject string `json:"literalSubject,omitempty"`
+	LiteralSubject string `json:"literalSubject,omitempty"`
 	// x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate.
 	// More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
 	// 
 	// This is an Alpha Feature and is only enabled with the
 	// `--feature-gates=NameConstraints=true` option set on both
 	// the controller and webhook components.
-	Nameconstraints CertificateSpecNameconstraints `json:"nameConstraints,omitempty"`
+	NameConstraints CertificateSpecNameConstraints `json:"nameConstraints,omitempty"`
 	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
 	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
 	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
 	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
-	Othernames []CertificateSpecOthernames `json:"otherNames,omitempty"`
+	OtherNames []CertificateSpecOtherNames `json:"otherNames,omitempty"`
 	// Private key options. These include the key algorithm and size, the used
 	// encoding and the rotation policy.
-	Privatekey CertificateSpecPrivatekey `json:"privateKey,omitempty"`
+	PrivateKey CertificateSpecPrivateKey `json:"privateKey,omitempty"`
 	// How long before the currently issued certificate's expiry cert-manager should
 	// renew the certificate. For example, if a certificate is valid for 60 minutes,
 	// and `renewBefore=10m`, cert-manager will begin to attempt to renew the certificate
@@ -127,7 +127,7 @@ type CertificateSpec struct {
 	// Minimum accepted value is 5 minutes.
 	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
 	// Cannot be set if the `renewBeforePercentage` field is set.
-	Renewbefore string `json:"renewBefore,omitempty"`
+	RenewBefore string `json:"renewBefore,omitempty"`
 	// `renewBeforePercentage` is like `renewBefore`, except it is a relative percentage
 	// rather than an absolute duration. For example, if a certificate is valid for 60
 	// minutes, and  `renewBeforePercentage=25`, cert-manager will begin to attempt to
@@ -142,7 +142,7 @@ type CertificateSpec struct {
 	// `renewBefore` derived from the `renewBeforePercentage` and `duration` fields is 5
 	// minutes.
 	// Cannot be set if the `renewBefore` field is set.
-	Renewbeforepercentage int32 `json:"renewBeforePercentage,omitempty"`
+	RenewBeforePercentage int32 `json:"renewBeforePercentage,omitempty"`
 	// The maximum number of CertificateRequest revisions that are maintained in
 	// the Certificate's history. Each revision represents a single `CertificateRequest`
 	// created by this Certificate, either when it was created, renewed, or Spec
@@ -152,18 +152,18 @@ type CertificateSpec struct {
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
 	// If unset (`nil`), revisions will not be garbage collected.
 	// Default value is `nil`.
-	Revisionhistorylimit int32 `json:"revisionHistoryLimit,omitempty"`
+	RevisionHistoryLimit int32 `json:"revisionHistoryLimit,omitempty"`
 	// Name of the Secret resource that will be automatically created and
 	// managed by this Certificate resource. It will be populated with a
 	// private key and certificate, signed by the denoted issuer. The Secret
 	// resource lives in the same namespace as the Certificate resource.
-	Secretname string `json:"secretName,omitempty"`
+	SecretName string `json:"secretName,omitempty"`
 	// Defines annotations and labels to be copied to the Certificate's Secret.
 	// Labels and annotations on the Secret will be changed as they appear on the
 	// SecretTemplate when added or removed. SecretTemplate annotations are added
 	// in conjunction with, and cannot overwrite, the base set of annotations
 	// cert-manager sets on the Certificate's Secret.
-	Secrettemplate CertificateSpecSecrettemplate `json:"secretTemplate,omitempty"`
+	SecretTemplate CertificateSpecSecretTemplate `json:"secretTemplate,omitempty"`
 	// Requested set of X509 certificate subject attributes.
 	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
 	// 
@@ -181,15 +181,15 @@ type CertificateSpec struct {
 	Usages []CertificateSpecUsages `json:"usages,omitempty"`
 }
 
-// CertificateSpecAdditionaloutputformats represents a Certificate.spec.additionalOutputFormats
-type CertificateSpecAdditionaloutputformats struct {
+// CertificateSpecAdditionalOutputFormats represents a Certificate.spec.additionalOutputFormats
+type CertificateSpecAdditionalOutputFormats struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
-	Type CertificateSpecAdditionaloutputformatsType `json:"type,omitempty"`
+	Type CertificateSpecAdditionalOutputFormatsType `json:"type,omitempty"`
 }
 
-// CertificateSpecIssuerref represents a Certificate.spec.issuerRef
-type CertificateSpecIssuerref struct {
+// CertificateSpecIssuerRef represents a Certificate.spec.issuerRef
+type CertificateSpecIssuerRef struct {
 	// Group of the resource being referred to.
 	Group string `json:"group,omitempty"`
 	// Kind of the resource being referred to.
@@ -231,11 +231,11 @@ type CertificateSpecKeystoresJks struct {
 	// containing the password used to encrypt the JKS keystore.
 	// Mutually exclusive with password.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	Passwordsecretref CertificateSpecKeystoresJksPasswordsecretref `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef CertificateSpecKeystoresJksPasswordSecretRef `json:"passwordSecretRef,omitempty"`
 }
 
-// CertificateSpecKeystoresJksPasswordsecretref represents a Certificate.spec.keystores.jks.passwordSecretRef
-type CertificateSpecKeystoresJksPasswordsecretref struct {
+// CertificateSpecKeystoresJksPasswordSecretRef represents a Certificate.spec.keystores.jks.passwordSecretRef
+type CertificateSpecKeystoresJksPasswordSecretRef struct {
 	// The key of the entry in the Secret resource's `data` field to be used.
 	// Some instances of this field may be defaulted, in others it may be
 	// required.
@@ -265,7 +265,7 @@ type CertificateSpecKeystoresPkcs12 struct {
 	// containing the password used to encrypt the PKCS#12 keystore.
 	// Mutually exclusive with password.
 	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	Passwordsecretref CertificateSpecKeystoresPkcs12Passwordsecretref `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef CertificateSpecKeystoresPkcs12PasswordSecretRef `json:"passwordSecretRef,omitempty"`
 	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
 	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
 	// 
@@ -278,8 +278,8 @@ type CertificateSpecKeystoresPkcs12 struct {
 	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
 }
 
-// CertificateSpecKeystoresPkcs12Passwordsecretref represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
-type CertificateSpecKeystoresPkcs12Passwordsecretref struct {
+// CertificateSpecKeystoresPkcs12PasswordSecretRef represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
+type CertificateSpecKeystoresPkcs12PasswordSecretRef struct {
 	// The key of the entry in the Secret resource's `data` field to be used.
 	// Some instances of this field may be defaulted, in others it may be
 	// required.
@@ -289,57 +289,57 @@ type CertificateSpecKeystoresPkcs12Passwordsecretref struct {
 	Name string `json:"name,omitempty"`
 }
 
-// CertificateSpecNameconstraints represents a Certificate.spec.nameConstraints
-type CertificateSpecNameconstraints struct {
+// CertificateSpecNameConstraints represents a Certificate.spec.nameConstraints
+type CertificateSpecNameConstraints struct {
 	// if true then the name constraints are marked critical.
 	Critical bool `json:"critical,omitempty"`
 	// Excluded contains the constraints which must be disallowed. Any name matching a
 	// restriction in the excluded field is invalid regardless
 	// of information appearing in the permitted
-	Excluded CertificateSpecNameconstraintsExcluded `json:"excluded,omitempty"`
+	Excluded CertificateSpecNameConstraintsExcluded `json:"excluded,omitempty"`
 	// Permitted contains the constraints in which the names must be located.
-	Permitted CertificateSpecNameconstraintsPermitted `json:"permitted,omitempty"`
+	Permitted CertificateSpecNameConstraintsPermitted `json:"permitted,omitempty"`
 }
 
-// CertificateSpecNameconstraintsExcluded represents a Certificate.spec.nameConstraints.excluded
-type CertificateSpecNameconstraintsExcluded struct {
+// CertificateSpecNameConstraintsExcluded represents a Certificate.spec.nameConstraints.excluded
+type CertificateSpecNameConstraintsExcluded struct {
 	// DNSDomains is a list of DNS domains that are permitted or excluded.
-	Dnsdomains []string `json:"dnsDomains,omitempty"`
+	DnsDomains []string `json:"dnsDomains,omitempty"`
 	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
-	Emailaddresses []string `json:"emailAddresses,omitempty"`
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
 	// IPRanges is a list of IP Ranges that are permitted or excluded.
 	// This should be a valid CIDR notation.
-	Ipranges []string `json:"ipRanges,omitempty"`
+	IpRanges []string `json:"ipRanges,omitempty"`
 	// URIDomains is a list of URI domains that are permitted or excluded.
-	Uridomains []string `json:"uriDomains,omitempty"`
+	UriDomains []string `json:"uriDomains,omitempty"`
 }
 
-// CertificateSpecNameconstraintsPermitted represents a Certificate.spec.nameConstraints.permitted
-type CertificateSpecNameconstraintsPermitted struct {
+// CertificateSpecNameConstraintsPermitted represents a Certificate.spec.nameConstraints.permitted
+type CertificateSpecNameConstraintsPermitted struct {
 	// DNSDomains is a list of DNS domains that are permitted or excluded.
-	Dnsdomains []string `json:"dnsDomains,omitempty"`
+	DnsDomains []string `json:"dnsDomains,omitempty"`
 	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
-	Emailaddresses []string `json:"emailAddresses,omitempty"`
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
 	// IPRanges is a list of IP Ranges that are permitted or excluded.
 	// This should be a valid CIDR notation.
-	Ipranges []string `json:"ipRanges,omitempty"`
+	IpRanges []string `json:"ipRanges,omitempty"`
 	// URIDomains is a list of URI domains that are permitted or excluded.
-	Uridomains []string `json:"uriDomains,omitempty"`
+	UriDomains []string `json:"uriDomains,omitempty"`
 }
 
-// CertificateSpecOthernames represents a Certificate.spec.otherNames
-type CertificateSpecOthernames struct {
+// CertificateSpecOtherNames represents a Certificate.spec.otherNames
+type CertificateSpecOtherNames struct {
 	// OID is the object identifier for the otherName SAN.
 	// The object identifier must be expressed as a dotted string, for
 	// example, "1.2.840.113556.1.4.221".
 	Oid string `json:"oid,omitempty"`
 	// utf8Value is the string value of the otherName SAN.
 	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
-	Utf8value string `json:"utf8Value,omitempty"`
+	Utf8Value string `json:"utf8Value,omitempty"`
 }
 
-// CertificateSpecPrivatekey represents a Certificate.spec.privateKey
-type CertificateSpecPrivatekey struct {
+// CertificateSpecPrivateKey represents a Certificate.spec.privateKey
+type CertificateSpecPrivateKey struct {
 	// Algorithm is the private key algorithm of the corresponding private key
 	// for this certificate.
 	// 
@@ -348,14 +348,14 @@ type CertificateSpecPrivatekey struct {
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
-	Algorithm CertificateSpecPrivatekeyAlgorithm `json:"algorithm,omitempty"`
+	Algorithm CertificateSpecPrivateKeyAlgorithm `json:"algorithm,omitempty"`
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
 	// 
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
-	Encoding CertificateSpecPrivatekeyEncoding `json:"encoding,omitempty"`
+	Encoding CertificateSpecPrivateKeyEncoding `json:"encoding,omitempty"`
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
 	// 
@@ -366,7 +366,7 @@ type CertificateSpecPrivatekey struct {
 	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
 	// Default is `Never` for backward compatibility.
-	Rotationpolicy CertificateSpecPrivatekeyRotationpolicy `json:"rotationPolicy,omitempty"`
+	RotationPolicy CertificateSpecPrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
 	// Size is the key bit size of the corresponding private key for this certificate.
 	// 
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
@@ -378,8 +378,8 @@ type CertificateSpecPrivatekey struct {
 	Size int64 `json:"size,omitempty"`
 }
 
-// CertificateSpecSecrettemplate represents a Certificate.spec.secretTemplate
-type CertificateSpecSecrettemplate struct {
+// CertificateSpecSecretTemplate represents a Certificate.spec.secretTemplate
+type CertificateSpecSecretTemplate struct {
 	// Annotations is a key value map to be copied to the target Kubernetes Secret.
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// Labels is a key value map to be copied to the target Kubernetes Secret.
@@ -393,17 +393,17 @@ type CertificateSpecSubject struct {
 	// Cities to be used on the Certificate.
 	Localities []string `json:"localities,omitempty"`
 	// Organizational Units to be used on the Certificate.
-	Organizationalunits []string `json:"organizationalUnits,omitempty"`
+	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
 	// Organizations to be used on the Certificate.
 	Organizations []string `json:"organizations,omitempty"`
 	// Postal codes to be used on the Certificate.
-	Postalcodes []string `json:"postalCodes,omitempty"`
+	PostalCodes []string `json:"postalCodes,omitempty"`
 	// State/Provinces to be used on the Certificate.
 	Provinces []string `json:"provinces,omitempty"`
 	// Serial number to be used on the Certificate.
-	Serialnumber string `json:"serialNumber,omitempty"`
+	SerialNumber string `json:"serialNumber,omitempty"`
 	// Street addresses to be used on the Certificate.
-	Streetaddresses []string `json:"streetAddresses,omitempty"`
+	StreetAddresses []string `json:"streetAddresses,omitempty"`
 }
 
 // CertificateStatus represents a Certificate.status
@@ -416,30 +416,30 @@ type CertificateStatus struct {
 	// 1 if unset and an issuance has failed. If an issuance has failed, the
 	// delay till the next issuance will be calculated using formula
 	// time.Hour * 2 ^ (failedIssuanceAttempts - 1).
-	Failedissuanceattempts int64 `json:"failedIssuanceAttempts,omitempty"`
+	FailedIssuanceAttempts int64 `json:"failedIssuanceAttempts,omitempty"`
 	// LastFailureTime is set only if the latest issuance for this
 	// Certificate failed and contains the time of the failure. If an
 	// issuance has failed, the delay till the next issuance will be
 	// calculated using formula time.Hour * 2 ^ (failedIssuanceAttempts -
 	// 1). If the latest issuance has succeeded this field will be unset.
-	Lastfailuretime metav1.Time `json:"lastFailureTime,omitempty"`
+	LastFailureTime metav1.Time `json:"lastFailureTime,omitempty"`
 	// The name of the Secret resource containing the private key to be used
 	// for the next certificate iteration.
 	// The keymanager controller will automatically set this field if the
 	// `Issuing` condition is set to `True`.
 	// It will automatically unset this field when the Issuing condition is
 	// not set or False.
-	Nextprivatekeysecretname string `json:"nextPrivateKeySecretName,omitempty"`
+	NextPrivateKeySecretName string `json:"nextPrivateKeySecretName,omitempty"`
 	// The expiration time of the certificate stored in the secret named
 	// by this resource in `spec.secretName`.
-	Notafter metav1.Time `json:"notAfter,omitempty"`
+	NotAfter metav1.Time `json:"notAfter,omitempty"`
 	// The time after which the certificate stored in the secret named
 	// by this resource in `spec.secretName` is valid.
-	Notbefore metav1.Time `json:"notBefore,omitempty"`
+	NotBefore metav1.Time `json:"notBefore,omitempty"`
 	// RenewalTime is the time at which the certificate will be next
 	// renewed.
 	// If not set, no upcoming renewal is scheduled.
-	Renewaltime metav1.Time `json:"renewalTime,omitempty"`
+	RenewalTime metav1.Time `json:"renewalTime,omitempty"`
 	// The current 'revision' of the certificate as issued.
 	// 
 	// When a CertificateRequest resource is created, it will have the
@@ -461,7 +461,7 @@ type CertificateStatus struct {
 type CertificateStatusConditions struct {
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	Lasttransitiontime metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
 	Message string `json:"message,omitempty"`
@@ -470,7 +470,7 @@ type CertificateStatusConditions struct {
 	// For instance, if .metadata.generation is currently 12, but the
 	// .status.condition[x].observedGeneration is 9, the condition is out of date
 	// with respect to the current state of the Certificate.
-	Observedgeneration int64 `json:"observedGeneration,omitempty"`
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 	// Reason is a brief machine readable explanation for the condition's last
 	// transition.
 	Reason string `json:"reason,omitempty"`
@@ -532,58 +532,58 @@ var (
 	CertificateSpecUsagesNetscapeSgc CertificateSpecUsages = "netscape sgc"
 )
 
-// CertificateSpecAdditionaloutputformatsType represents an enumeration for Type
-type CertificateSpecAdditionaloutputformatsType string
+// CertificateSpecAdditionalOutputFormatsType represents an enumeration for Type
+type CertificateSpecAdditionalOutputFormatsType string
 
 var (
-	// CertificateSpecAdditionaloutputformatsTypeDer Type enum value "DER"
-	CertificateSpecAdditionaloutputformatsTypeDer CertificateSpecAdditionaloutputformatsType = "DER"
-	// CertificateSpecAdditionaloutputformatsTypeCombinedpem Type enum value "CombinedPEM"
-	CertificateSpecAdditionaloutputformatsTypeCombinedpem CertificateSpecAdditionaloutputformatsType = "CombinedPEM"
+	// CertificateSpecAdditionalOutputFormatsTypeDER Type enum value "DER"
+	CertificateSpecAdditionalOutputFormatsTypeDER CertificateSpecAdditionalOutputFormatsType = "DER"
+	// CertificateSpecAdditionalOutputFormatsTypeCombinedPEM Type enum value "CombinedPEM"
+	CertificateSpecAdditionalOutputFormatsTypeCombinedPEM CertificateSpecAdditionalOutputFormatsType = "CombinedPEM"
 )
 
 // CertificateSpecKeystoresPkcs12Profile represents an enumeration for Profile
 type CertificateSpecKeystoresPkcs12Profile string
 
 var (
-	// CertificateSpecKeystoresPkcs12ProfileLegacyrc2 Profile enum value "LegacyRC2"
-	CertificateSpecKeystoresPkcs12ProfileLegacyrc2 CertificateSpecKeystoresPkcs12Profile = "LegacyRC2"
-	// CertificateSpecKeystoresPkcs12ProfileLegacydes Profile enum value "LegacyDES"
-	CertificateSpecKeystoresPkcs12ProfileLegacydes CertificateSpecKeystoresPkcs12Profile = "LegacyDES"
+	// CertificateSpecKeystoresPkcs12ProfileLegacyRC2 Profile enum value "LegacyRC2"
+	CertificateSpecKeystoresPkcs12ProfileLegacyRC2 CertificateSpecKeystoresPkcs12Profile = "LegacyRC2"
+	// CertificateSpecKeystoresPkcs12ProfileLegacyDES Profile enum value "LegacyDES"
+	CertificateSpecKeystoresPkcs12ProfileLegacyDES CertificateSpecKeystoresPkcs12Profile = "LegacyDES"
 	// CertificateSpecKeystoresPkcs12ProfileModern2023 Profile enum value "Modern2023"
 	CertificateSpecKeystoresPkcs12ProfileModern2023 CertificateSpecKeystoresPkcs12Profile = "Modern2023"
 )
 
-// CertificateSpecPrivatekeyAlgorithm represents an enumeration for Algorithm
-type CertificateSpecPrivatekeyAlgorithm string
+// CertificateSpecPrivateKeyAlgorithm represents an enumeration for Algorithm
+type CertificateSpecPrivateKeyAlgorithm string
 
 var (
-	// CertificateSpecPrivatekeyAlgorithmRsa Algorithm enum value "RSA"
-	CertificateSpecPrivatekeyAlgorithmRsa CertificateSpecPrivatekeyAlgorithm = "RSA"
-	// CertificateSpecPrivatekeyAlgorithmEcdsa Algorithm enum value "ECDSA"
-	CertificateSpecPrivatekeyAlgorithmEcdsa CertificateSpecPrivatekeyAlgorithm = "ECDSA"
-	// CertificateSpecPrivatekeyAlgorithmEd25519 Algorithm enum value "Ed25519"
-	CertificateSpecPrivatekeyAlgorithmEd25519 CertificateSpecPrivatekeyAlgorithm = "Ed25519"
+	// CertificateSpecPrivateKeyAlgorithmRSA Algorithm enum value "RSA"
+	CertificateSpecPrivateKeyAlgorithmRSA CertificateSpecPrivateKeyAlgorithm = "RSA"
+	// CertificateSpecPrivateKeyAlgorithmECDSA Algorithm enum value "ECDSA"
+	CertificateSpecPrivateKeyAlgorithmECDSA CertificateSpecPrivateKeyAlgorithm = "ECDSA"
+	// CertificateSpecPrivateKeyAlgorithmEd25519 Algorithm enum value "Ed25519"
+	CertificateSpecPrivateKeyAlgorithmEd25519 CertificateSpecPrivateKeyAlgorithm = "Ed25519"
 )
 
-// CertificateSpecPrivatekeyEncoding represents an enumeration for Encoding
-type CertificateSpecPrivatekeyEncoding string
+// CertificateSpecPrivateKeyEncoding represents an enumeration for Encoding
+type CertificateSpecPrivateKeyEncoding string
 
 var (
-	// CertificateSpecPrivatekeyEncodingPkcs1 Encoding enum value "PKCS1"
-	CertificateSpecPrivatekeyEncodingPkcs1 CertificateSpecPrivatekeyEncoding = "PKCS1"
-	// CertificateSpecPrivatekeyEncodingPkcs8 Encoding enum value "PKCS8"
-	CertificateSpecPrivatekeyEncodingPkcs8 CertificateSpecPrivatekeyEncoding = "PKCS8"
+	// CertificateSpecPrivateKeyEncodingPKCS1 Encoding enum value "PKCS1"
+	CertificateSpecPrivateKeyEncodingPKCS1 CertificateSpecPrivateKeyEncoding = "PKCS1"
+	// CertificateSpecPrivateKeyEncodingPKCS8 Encoding enum value "PKCS8"
+	CertificateSpecPrivateKeyEncodingPKCS8 CertificateSpecPrivateKeyEncoding = "PKCS8"
 )
 
-// CertificateSpecPrivatekeyRotationpolicy represents an enumeration for Rotationpolicy
-type CertificateSpecPrivatekeyRotationpolicy string
+// CertificateSpecPrivateKeyRotationPolicy represents an enumeration for RotationPolicy
+type CertificateSpecPrivateKeyRotationPolicy string
 
 var (
-	// CertificateSpecPrivatekeyRotationpolicyNever Rotationpolicy enum value "Never"
-	CertificateSpecPrivatekeyRotationpolicyNever CertificateSpecPrivatekeyRotationpolicy = "Never"
-	// CertificateSpecPrivatekeyRotationpolicyAlways Rotationpolicy enum value "Always"
-	CertificateSpecPrivatekeyRotationpolicyAlways CertificateSpecPrivatekeyRotationpolicy = "Always"
+	// CertificateSpecPrivateKeyRotationPolicyNever RotationPolicy enum value "Never"
+	CertificateSpecPrivateKeyRotationPolicyNever CertificateSpecPrivateKeyRotationPolicy = "Never"
+	// CertificateSpecPrivateKeyRotationPolicyAlways RotationPolicy enum value "Always"
+	CertificateSpecPrivateKeyRotationPolicyAlways CertificateSpecPrivateKeyRotationPolicy = "Always"
 )
 
 // CertificateStatusConditionsStatus represents an enumeration for Status

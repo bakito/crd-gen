@@ -54,14 +54,14 @@ type CertificateRequestSpec struct {
 	// 
 	// If true, this will automatically add the `cert sign` usage to the list
 	// of requested `usages`.
-	Isca bool `json:"isCA,omitempty"`
+	IsCA bool `json:"isCA,omitempty"`
 	// Reference to the issuer responsible for issuing the certificate.
 	// If the issuer is namespace-scoped, it must be in the same namespace
 	// as the Certificate. If the issuer is cluster-scoped, it can be used
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	Issuerref CertificateRequestSpecIssuerref `json:"issuerRef,omitempty"`
+	IssuerRef CertificateRequestSpecIssuerRef `json:"issuerRef,omitempty"`
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	// 
@@ -89,8 +89,8 @@ type CertificateRequestSpec struct {
 	Username string `json:"username,omitempty"`
 }
 
-// CertificateRequestSpecIssuerref represents a CertificateRequest.spec.issuerRef
-type CertificateRequestSpecIssuerref struct {
+// CertificateRequestSpecIssuerRef represents a CertificateRequest.spec.issuerRef
+type CertificateRequestSpecIssuerRef struct {
 	// Group of the resource being referred to.
 	Group string `json:"group,omitempty"`
 	// Kind of the resource being referred to.
@@ -117,14 +117,14 @@ type CertificateRequestStatus struct {
 	Conditions []CertificateRequestStatusConditions `json:"conditions,omitempty"`
 	// FailureTime stores the time that this CertificateRequest failed. This is
 	// used to influence garbage collection and back-off.
-	Failuretime metav1.Time `json:"failureTime,omitempty"`
+	FailureTime metav1.Time `json:"failureTime,omitempty"`
 }
 
 // CertificateRequestStatusConditions represents a CertificateRequest.status.conditions
 type CertificateRequestStatusConditions struct {
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
-	Lasttransitiontime metav1.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// Message is a human readable description of the details of the last
 	// transition, complementing reason.
 	Message string `json:"message,omitempty"`

@@ -3,7 +3,6 @@ module github.com/bakito/extract-crd-api
 go 1.24.2
 
 require (
-	github.com/crossplane/crossplane-runtime v1.19.0
 	github.com/go-git/go-git/v5 v5.16.0
 	k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/apimachinery v0.33.0

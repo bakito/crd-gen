@@ -22,7 +22,7 @@ func toCamelCase(s string) string {
 
 	for i, word := range words {
 		if word != "" {
-			words[i] = strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
 		}
 	}
 
