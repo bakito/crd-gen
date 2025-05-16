@@ -34,6 +34,16 @@ type CertificateRequest struct {
 }
 
 
+// CertificateRequestIssuerRef represents a CertificateRequest.spec.issuerRef
+type CertificateRequestIssuerRef struct {
+	// Group of the resource being referred to.
+	Group string `json:"group,omitempty"`
+	// Kind of the resource being referred to.
+	Kind string `json:"kind,omitempty"`
+	// Name of the resource being referred to.
+	Name string `json:"name,omitempty"`
+}
+
 // CertificateRequestSpec represents a CertificateRequest.spec
 type CertificateRequestSpec struct {
 	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
@@ -61,7 +71,7 @@ type CertificateRequestSpec struct {
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	IssuerRef CertificateSpecIssuerRef `json:"issuerRef,omitempty"`
+	IssuerRef CertificateRequestIssuerRef `json:"issuerRef,omitempty"`
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	// 

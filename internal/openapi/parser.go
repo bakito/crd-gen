@@ -26,13 +26,15 @@ func Parse(crdData []byte, desiredVersion string) (*CustomResource, error) {
 	}
 
 	cr := &CustomResource{
-		Kind:    crd.Spec.Names.Kind,
-		Plural:  crd.Spec.Names.Plural,
-		List:    crd.Spec.Names.ListKind,
-		Group:   crd.Spec.Group,
-		Version: version,
-		Structs: make(map[string]*StructDef),
-		Imports: map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
+		Kind:             crd.Spec.Names.Kind,
+		Plural:           crd.Spec.Names.Plural,
+		List:             crd.Spec.Names.ListKind,
+		Group:            crd.Spec.Group,
+		Version:          version,
+		Structs:          make(map[string]*StructDef),
+		Imports:          map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
+		structSignatures: make(map[string]string),
+		structNamesCnt:   make(map[string]int),
 	}
 
 	// Generate structs
@@ -64,14 +66,23 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 			switch prop.Type {
 			case "object":
 				if len(prop.Properties) > 0 {
-					a := objects
-					if ft, ok := a[j(prop.Properties)]; ok {
+					signature := sign(prop.Properties)
+
+					if ft, ok := cr.structSignatures[signature]; ok {
 						fieldType = ft
 					} else {
-						nestedName := name + fieldName
-						fieldType = nestedName
-						objects[j(prop.Properties)] = fieldType
-						generateStructs(&prop, cr, nestedName, path+"."+propName, false)
+						kindFieldName := cr.Kind + fieldName
+						var trueFieldName string
+						if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
+							cr.structNamesCnt[kindFieldName] = cnt + 1
+						} else {
+							trueFieldName = kindFieldName
+							cr.structNamesCnt[kindFieldName] = 1
+						}
+						fieldType = trueFieldName
+						cr.structSignatures[signature] = fieldType
+						generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
 					}
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
@@ -224,9 +235,7 @@ func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDe
 	return enums
 }
 
-var objects = make(map[string]string)
-
-func j(y any) string {
+func sign(y map[string]apiv1.JSONSchemaProps) string {
 	b, _ := json.Marshal(y)
 	return string(b)
 }

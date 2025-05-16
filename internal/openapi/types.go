@@ -19,6 +19,9 @@ type CustomResource struct {
 	List    string
 	Group   string
 	Version string
+
+	structSignatures map[string]string
+	structNamesCnt   map[string]int
 }
 
 // StructDef represents a Go struct definition.
