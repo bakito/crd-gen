@@ -1,6 +1,8 @@
 package openapi
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"unicode"
@@ -282,5 +284,6 @@ func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDe
 
 func sign(y any) string {
 	b, _ := json.Marshal(y)
-	return string(b)
+	hash := md5.Sum(b)
+	return hex.EncodeToString(hash[:])
 }
