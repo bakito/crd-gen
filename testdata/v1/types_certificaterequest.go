@@ -46,7 +46,7 @@ type CertificateRequestConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateRequestConditionsStatus `json:"status,omitempty"`
+	Status CertificateRequestStatus1 `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
 	// `Approved`, `Denied`).
 	Type string `json:"type,omitempty"`
@@ -111,7 +111,7 @@ type CertificateRequestSpec struct {
 	// as specified here without any additional values.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []CertificateRequestSpecUsages `json:"usages,omitempty"`
+	Usages []CertificateRequestUsages `json:"usages,omitempty"`
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
 	Username string `json:"username,omitempty"`
@@ -138,67 +138,67 @@ type CertificateRequestStatus struct {
 	FailureTime metav1.Time `json:"failureTime,omitempty"`
 }
 
-// CertificateRequestConditionsStatus represents an enumeration for Status
-type CertificateRequestConditionsStatus string
+// CertificateRequestStatus1 represents an enumeration for Status
+type CertificateRequestStatus1 string
 
 var (
-	// CertificateRequestConditionsStatusTrue Status enum value "True"
-	CertificateRequestConditionsStatusTrue CertificateRequestConditionsStatus = "True"
-	// CertificateRequestConditionsStatusFalse Status enum value "False"
-	CertificateRequestConditionsStatusFalse CertificateRequestConditionsStatus = "False"
-	// CertificateRequestConditionsStatusUnknown Status enum value "Unknown"
-	CertificateRequestConditionsStatusUnknown CertificateRequestConditionsStatus = "Unknown"
+	// CertificateRequestStatus1True Status enum value "True"
+	CertificateRequestStatus1True CertificateRequestStatus1 = "True"
+	// CertificateRequestStatus1False Status enum value "False"
+	CertificateRequestStatus1False CertificateRequestStatus1 = "False"
+	// CertificateRequestStatus1Unknown Status enum value "Unknown"
+	CertificateRequestStatus1Unknown CertificateRequestStatus1 = "Unknown"
 )
 
-// CertificateRequestSpecUsages represents an enumeration for Usages
-type CertificateRequestSpecUsages string
+// CertificateRequestUsages represents an enumeration for Usages
+type CertificateRequestUsages string
 
 var (
-	// CertificateRequestSpecUsagesSigning Usages enum value "signing"
-	CertificateRequestSpecUsagesSigning CertificateRequestSpecUsages = "signing"
-	// CertificateRequestSpecUsagesDigitalSignature Usages enum value "digital signature"
-	CertificateRequestSpecUsagesDigitalSignature CertificateRequestSpecUsages = "digital signature"
-	// CertificateRequestSpecUsagesContentCommitment Usages enum value "content commitment"
-	CertificateRequestSpecUsagesContentCommitment CertificateRequestSpecUsages = "content commitment"
-	// CertificateRequestSpecUsagesKeyEncipherment Usages enum value "key encipherment"
-	CertificateRequestSpecUsagesKeyEncipherment CertificateRequestSpecUsages = "key encipherment"
-	// CertificateRequestSpecUsagesKeyAgreement Usages enum value "key agreement"
-	CertificateRequestSpecUsagesKeyAgreement CertificateRequestSpecUsages = "key agreement"
-	// CertificateRequestSpecUsagesDataEncipherment Usages enum value "data encipherment"
-	CertificateRequestSpecUsagesDataEncipherment CertificateRequestSpecUsages = "data encipherment"
-	// CertificateRequestSpecUsagesCertSign Usages enum value "cert sign"
-	CertificateRequestSpecUsagesCertSign CertificateRequestSpecUsages = "cert sign"
-	// CertificateRequestSpecUsagesCrlSign Usages enum value "crl sign"
-	CertificateRequestSpecUsagesCrlSign CertificateRequestSpecUsages = "crl sign"
-	// CertificateRequestSpecUsagesEncipherOnly Usages enum value "encipher only"
-	CertificateRequestSpecUsagesEncipherOnly CertificateRequestSpecUsages = "encipher only"
-	// CertificateRequestSpecUsagesDecipherOnly Usages enum value "decipher only"
-	CertificateRequestSpecUsagesDecipherOnly CertificateRequestSpecUsages = "decipher only"
-	// CertificateRequestSpecUsagesAny Usages enum value "any"
-	CertificateRequestSpecUsagesAny CertificateRequestSpecUsages = "any"
-	// CertificateRequestSpecUsagesServerAuth Usages enum value "server auth"
-	CertificateRequestSpecUsagesServerAuth CertificateRequestSpecUsages = "server auth"
-	// CertificateRequestSpecUsagesClientAuth Usages enum value "client auth"
-	CertificateRequestSpecUsagesClientAuth CertificateRequestSpecUsages = "client auth"
-	// CertificateRequestSpecUsagesCodeSigning Usages enum value "code signing"
-	CertificateRequestSpecUsagesCodeSigning CertificateRequestSpecUsages = "code signing"
-	// CertificateRequestSpecUsagesEmailProtection Usages enum value "email protection"
-	CertificateRequestSpecUsagesEmailProtection CertificateRequestSpecUsages = "email protection"
-	// CertificateRequestSpecUsagesSMime Usages enum value "s/mime"
-	CertificateRequestSpecUsagesSMime CertificateRequestSpecUsages = "s/mime"
-	// CertificateRequestSpecUsagesIpsecEndSystem Usages enum value "ipsec end system"
-	CertificateRequestSpecUsagesIpsecEndSystem CertificateRequestSpecUsages = "ipsec end system"
-	// CertificateRequestSpecUsagesIpsecTunnel Usages enum value "ipsec tunnel"
-	CertificateRequestSpecUsagesIpsecTunnel CertificateRequestSpecUsages = "ipsec tunnel"
-	// CertificateRequestSpecUsagesIpsecUser Usages enum value "ipsec user"
-	CertificateRequestSpecUsagesIpsecUser CertificateRequestSpecUsages = "ipsec user"
-	// CertificateRequestSpecUsagesTimestamping Usages enum value "timestamping"
-	CertificateRequestSpecUsagesTimestamping CertificateRequestSpecUsages = "timestamping"
-	// CertificateRequestSpecUsagesOcspSigning Usages enum value "ocsp signing"
-	CertificateRequestSpecUsagesOcspSigning CertificateRequestSpecUsages = "ocsp signing"
-	// CertificateRequestSpecUsagesMicrosoftSgc Usages enum value "microsoft sgc"
-	CertificateRequestSpecUsagesMicrosoftSgc CertificateRequestSpecUsages = "microsoft sgc"
-	// CertificateRequestSpecUsagesNetscapeSgc Usages enum value "netscape sgc"
-	CertificateRequestSpecUsagesNetscapeSgc CertificateRequestSpecUsages = "netscape sgc"
+	// CertificateRequestUsagesSigning Usages enum value "signing"
+	CertificateRequestUsagesSigning CertificateRequestUsages = "signing"
+	// CertificateRequestUsagesDigitalSignature Usages enum value "digital signature"
+	CertificateRequestUsagesDigitalSignature CertificateRequestUsages = "digital signature"
+	// CertificateRequestUsagesContentCommitment Usages enum value "content commitment"
+	CertificateRequestUsagesContentCommitment CertificateRequestUsages = "content commitment"
+	// CertificateRequestUsagesKeyEncipherment Usages enum value "key encipherment"
+	CertificateRequestUsagesKeyEncipherment CertificateRequestUsages = "key encipherment"
+	// CertificateRequestUsagesKeyAgreement Usages enum value "key agreement"
+	CertificateRequestUsagesKeyAgreement CertificateRequestUsages = "key agreement"
+	// CertificateRequestUsagesDataEncipherment Usages enum value "data encipherment"
+	CertificateRequestUsagesDataEncipherment CertificateRequestUsages = "data encipherment"
+	// CertificateRequestUsagesCertSign Usages enum value "cert sign"
+	CertificateRequestUsagesCertSign CertificateRequestUsages = "cert sign"
+	// CertificateRequestUsagesCrlSign Usages enum value "crl sign"
+	CertificateRequestUsagesCrlSign CertificateRequestUsages = "crl sign"
+	// CertificateRequestUsagesEncipherOnly Usages enum value "encipher only"
+	CertificateRequestUsagesEncipherOnly CertificateRequestUsages = "encipher only"
+	// CertificateRequestUsagesDecipherOnly Usages enum value "decipher only"
+	CertificateRequestUsagesDecipherOnly CertificateRequestUsages = "decipher only"
+	// CertificateRequestUsagesAny Usages enum value "any"
+	CertificateRequestUsagesAny CertificateRequestUsages = "any"
+	// CertificateRequestUsagesServerAuth Usages enum value "server auth"
+	CertificateRequestUsagesServerAuth CertificateRequestUsages = "server auth"
+	// CertificateRequestUsagesClientAuth Usages enum value "client auth"
+	CertificateRequestUsagesClientAuth CertificateRequestUsages = "client auth"
+	// CertificateRequestUsagesCodeSigning Usages enum value "code signing"
+	CertificateRequestUsagesCodeSigning CertificateRequestUsages = "code signing"
+	// CertificateRequestUsagesEmailProtection Usages enum value "email protection"
+	CertificateRequestUsagesEmailProtection CertificateRequestUsages = "email protection"
+	// CertificateRequestUsagesSMime Usages enum value "s/mime"
+	CertificateRequestUsagesSMime CertificateRequestUsages = "s/mime"
+	// CertificateRequestUsagesIpsecEndSystem Usages enum value "ipsec end system"
+	CertificateRequestUsagesIpsecEndSystem CertificateRequestUsages = "ipsec end system"
+	// CertificateRequestUsagesIpsecTunnel Usages enum value "ipsec tunnel"
+	CertificateRequestUsagesIpsecTunnel CertificateRequestUsages = "ipsec tunnel"
+	// CertificateRequestUsagesIpsecUser Usages enum value "ipsec user"
+	CertificateRequestUsagesIpsecUser CertificateRequestUsages = "ipsec user"
+	// CertificateRequestUsagesTimestamping Usages enum value "timestamping"
+	CertificateRequestUsagesTimestamping CertificateRequestUsages = "timestamping"
+	// CertificateRequestUsagesOcspSigning Usages enum value "ocsp signing"
+	CertificateRequestUsagesOcspSigning CertificateRequestUsages = "ocsp signing"
+	// CertificateRequestUsagesMicrosoftSgc Usages enum value "microsoft sgc"
+	CertificateRequestUsagesMicrosoftSgc CertificateRequestUsages = "microsoft sgc"
+	// CertificateRequestUsagesNetscapeSgc Usages enum value "netscape sgc"
+	CertificateRequestUsagesNetscapeSgc CertificateRequestUsages = "netscape sgc"
 )
 

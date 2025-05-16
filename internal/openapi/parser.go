@@ -109,7 +109,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 							cr.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = "[]" + trueFieldName
-						cr.structSignatures[signature] = fieldType
+						cr.structSignatures[signature] = trueFieldName
 						generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
 					}
 				}
@@ -132,17 +132,47 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
-			nestedName := name + fieldName
-			field.Enums = generateEnum(prop.Items.Schema, nestedName)
-			field.EnumType = prop.Items.Schema.Type
-			fieldType = "[]" + nestedName
-			field.EnumName = nestedName
+			signature := sign(prop.Items.Schema.Enum)
+
+			if ft, ok := cr.structSignatures[signature]; ok {
+				fieldType = ft
+			} else {
+				kindFieldName := cr.Kind + fieldName
+				var trueFieldName string
+				if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
+					cr.structNamesCnt[kindFieldName] = cnt + 1
+				} else {
+					trueFieldName = kindFieldName
+					cr.structNamesCnt[kindFieldName] = 1
+				}
+
+				field.Enums = generateEnum(prop.Items.Schema, trueFieldName)
+				field.EnumType = prop.Items.Schema.Type
+				fieldType = "[]" + trueFieldName
+				field.EnumName = trueFieldName
+				cr.structSignatures[signature] = trueFieldName
+			}
 		} else if len(prop.Enum) > 0 {
-			nestedName := name + fieldName
-			field.Enums = generateEnum(&prop, nestedName)
-			field.EnumType = prop.Type
-			field.EnumName = nestedName
-			fieldType = nestedName
+			signature := sign(prop.Enum)
+			if ft, ok := cr.structSignatures[signature]; ok {
+				fieldType = ft
+			} else {
+				kindFieldName := cr.Kind + fieldName
+				var trueFieldName string
+				if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
+					cr.structNamesCnt[kindFieldName] = cnt + 1
+				} else {
+					trueFieldName = kindFieldName
+					cr.structNamesCnt[kindFieldName] = 1
+				}
+				field.Enums = generateEnum(&prop, trueFieldName)
+				field.EnumType = prop.Type
+				field.EnumName = trueFieldName
+				fieldType = trueFieldName
+				cr.structSignatures[signature] = trueFieldName
+			}
 		}
 
 		field.Type = fieldType
@@ -250,7 +280,7 @@ func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDe
 	return enums
 }
 
-func sign(y map[string]apiv1.JSONSchemaProps) string {
+func sign(y any) string {
 	b, _ := json.Marshal(y)
 	return string(b)
 }

@@ -38,7 +38,7 @@ type Certificate struct {
 type CertificateAdditionalOutputFormats struct {
 	// Type is the name of the format type that should be written to the
 	// Certificate's target Secret.
-	Type CertificateAdditionalOutputFormatsType `json:"type,omitempty"`
+	Type CertificateType `json:"type,omitempty"`
 }
 
 // CertificateConditions represents a Certificate.status.conditions
@@ -59,7 +59,7 @@ type CertificateConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateConditionsStatus `json:"status,omitempty"`
+	Status CertificateStatus1 `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type string `json:"type,omitempty"`
 }
@@ -146,7 +146,7 @@ type CertificateOtherNames struct {
 	Utf8Value string `json:"utf8Value,omitempty"`
 }
 
-// CertificatePasswordSecretRef represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
+// CertificatePasswordSecretRef represents a Certificate.spec.keystores.jks.passwordSecretRef
 type CertificatePasswordSecretRef struct {
 	// The key of the entry in the Secret resource's `data` field to be used.
 	// Some instances of this field may be defaulted, in others it may be
@@ -187,7 +187,7 @@ type CertificatePkcs12 struct {
 	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
 	// (eg. because of company policy). Please note that the security of the algorithm is not that important
 	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
-	Profile CertificatePkcs12Profile `json:"profile,omitempty"`
+	Profile CertificateProfile `json:"profile,omitempty"`
 }
 
 // CertificatePrivateKey represents a Certificate.spec.privateKey
@@ -200,14 +200,14 @@ type CertificatePrivateKey struct {
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// key size is ignored when using the `Ed25519` key algorithm.
-	Algorithm CertificatePrivateKeyAlgorithm `json:"algorithm,omitempty"`
+	Algorithm CertificateAlgorithm `json:"algorithm,omitempty"`
 	// The private key cryptography standards (PKCS) encoding for this
 	// certificate's private key to be encoded in.
 	// 
 	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
 	// and PKCS#8, respectively.
 	// Defaults to `PKCS1` if not specified.
-	Encoding CertificatePrivateKeyEncoding `json:"encoding,omitempty"`
+	Encoding CertificateEncoding `json:"encoding,omitempty"`
 	// RotationPolicy controls how private keys should be regenerated when a
 	// re-issuance is being processed.
 	// 
@@ -218,7 +218,7 @@ type CertificatePrivateKey struct {
 	// If set to `Always`, a private key matching the specified requirements
 	// will be generated whenever a re-issuance occurs.
 	// Default is `Never` for backward compatibility.
-	RotationPolicy CertificatePrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
+	RotationPolicy CertificateRotationPolicy `json:"rotationPolicy,omitempty"`
 	// Size is the key bit size of the corresponding private key for this certificate.
 	// 
 	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
@@ -382,7 +382,7 @@ type CertificateSpec struct {
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []CertificateSpecUsages `json:"usages,omitempty"`
+	Usages []CertificateUsages `json:"usages,omitempty"`
 }
 
 // CertificateStatus represents a Certificate.status
@@ -456,121 +456,121 @@ type CertificateSubject struct {
 	StreetAddresses []string `json:"streetAddresses,omitempty"`
 }
 
-// CertificateAdditionalOutputFormatsType represents an enumeration for Type
-type CertificateAdditionalOutputFormatsType string
+// CertificateType represents an enumeration for Type
+type CertificateType string
 
 var (
-	// CertificateAdditionalOutputFormatsTypeDER Type enum value "DER"
-	CertificateAdditionalOutputFormatsTypeDER CertificateAdditionalOutputFormatsType = "DER"
-	// CertificateAdditionalOutputFormatsTypeCombinedPEM Type enum value "CombinedPEM"
-	CertificateAdditionalOutputFormatsTypeCombinedPEM CertificateAdditionalOutputFormatsType = "CombinedPEM"
+	// CertificateTypeDER Type enum value "DER"
+	CertificateTypeDER CertificateType = "DER"
+	// CertificateTypeCombinedPEM Type enum value "CombinedPEM"
+	CertificateTypeCombinedPEM CertificateType = "CombinedPEM"
 )
 
-// CertificateConditionsStatus represents an enumeration for Status
-type CertificateConditionsStatus string
+// CertificateStatus1 represents an enumeration for Status
+type CertificateStatus1 string
 
 var (
-	// CertificateConditionsStatusTrue Status enum value "True"
-	CertificateConditionsStatusTrue CertificateConditionsStatus = "True"
-	// CertificateConditionsStatusFalse Status enum value "False"
-	CertificateConditionsStatusFalse CertificateConditionsStatus = "False"
-	// CertificateConditionsStatusUnknown Status enum value "Unknown"
-	CertificateConditionsStatusUnknown CertificateConditionsStatus = "Unknown"
+	// CertificateStatus1True Status enum value "True"
+	CertificateStatus1True CertificateStatus1 = "True"
+	// CertificateStatus1False Status enum value "False"
+	CertificateStatus1False CertificateStatus1 = "False"
+	// CertificateStatus1Unknown Status enum value "Unknown"
+	CertificateStatus1Unknown CertificateStatus1 = "Unknown"
 )
 
-// CertificatePkcs12Profile represents an enumeration for Profile
-type CertificatePkcs12Profile string
+// CertificateProfile represents an enumeration for Profile
+type CertificateProfile string
 
 var (
-	// CertificatePkcs12ProfileLegacyRC2 Profile enum value "LegacyRC2"
-	CertificatePkcs12ProfileLegacyRC2 CertificatePkcs12Profile = "LegacyRC2"
-	// CertificatePkcs12ProfileLegacyDES Profile enum value "LegacyDES"
-	CertificatePkcs12ProfileLegacyDES CertificatePkcs12Profile = "LegacyDES"
-	// CertificatePkcs12ProfileModern2023 Profile enum value "Modern2023"
-	CertificatePkcs12ProfileModern2023 CertificatePkcs12Profile = "Modern2023"
+	// CertificateProfileLegacyRC2 Profile enum value "LegacyRC2"
+	CertificateProfileLegacyRC2 CertificateProfile = "LegacyRC2"
+	// CertificateProfileLegacyDES Profile enum value "LegacyDES"
+	CertificateProfileLegacyDES CertificateProfile = "LegacyDES"
+	// CertificateProfileModern2023 Profile enum value "Modern2023"
+	CertificateProfileModern2023 CertificateProfile = "Modern2023"
 )
 
-// CertificatePrivateKeyAlgorithm represents an enumeration for Algorithm
-type CertificatePrivateKeyAlgorithm string
+// CertificateAlgorithm represents an enumeration for Algorithm
+type CertificateAlgorithm string
 
 var (
-	// CertificatePrivateKeyAlgorithmRSA Algorithm enum value "RSA"
-	CertificatePrivateKeyAlgorithmRSA CertificatePrivateKeyAlgorithm = "RSA"
-	// CertificatePrivateKeyAlgorithmECDSA Algorithm enum value "ECDSA"
-	CertificatePrivateKeyAlgorithmECDSA CertificatePrivateKeyAlgorithm = "ECDSA"
-	// CertificatePrivateKeyAlgorithmEd25519 Algorithm enum value "Ed25519"
-	CertificatePrivateKeyAlgorithmEd25519 CertificatePrivateKeyAlgorithm = "Ed25519"
+	// CertificateAlgorithmRSA Algorithm enum value "RSA"
+	CertificateAlgorithmRSA CertificateAlgorithm = "RSA"
+	// CertificateAlgorithmECDSA Algorithm enum value "ECDSA"
+	CertificateAlgorithmECDSA CertificateAlgorithm = "ECDSA"
+	// CertificateAlgorithmEd25519 Algorithm enum value "Ed25519"
+	CertificateAlgorithmEd25519 CertificateAlgorithm = "Ed25519"
 )
 
-// CertificatePrivateKeyEncoding represents an enumeration for Encoding
-type CertificatePrivateKeyEncoding string
+// CertificateEncoding represents an enumeration for Encoding
+type CertificateEncoding string
 
 var (
-	// CertificatePrivateKeyEncodingPKCS1 Encoding enum value "PKCS1"
-	CertificatePrivateKeyEncodingPKCS1 CertificatePrivateKeyEncoding = "PKCS1"
-	// CertificatePrivateKeyEncodingPKCS8 Encoding enum value "PKCS8"
-	CertificatePrivateKeyEncodingPKCS8 CertificatePrivateKeyEncoding = "PKCS8"
+	// CertificateEncodingPKCS1 Encoding enum value "PKCS1"
+	CertificateEncodingPKCS1 CertificateEncoding = "PKCS1"
+	// CertificateEncodingPKCS8 Encoding enum value "PKCS8"
+	CertificateEncodingPKCS8 CertificateEncoding = "PKCS8"
 )
 
-// CertificatePrivateKeyRotationPolicy represents an enumeration for RotationPolicy
-type CertificatePrivateKeyRotationPolicy string
+// CertificateRotationPolicy represents an enumeration for RotationPolicy
+type CertificateRotationPolicy string
 
 var (
-	// CertificatePrivateKeyRotationPolicyNever RotationPolicy enum value "Never"
-	CertificatePrivateKeyRotationPolicyNever CertificatePrivateKeyRotationPolicy = "Never"
-	// CertificatePrivateKeyRotationPolicyAlways RotationPolicy enum value "Always"
-	CertificatePrivateKeyRotationPolicyAlways CertificatePrivateKeyRotationPolicy = "Always"
+	// CertificateRotationPolicyNever RotationPolicy enum value "Never"
+	CertificateRotationPolicyNever CertificateRotationPolicy = "Never"
+	// CertificateRotationPolicyAlways RotationPolicy enum value "Always"
+	CertificateRotationPolicyAlways CertificateRotationPolicy = "Always"
 )
 
-// CertificateSpecUsages represents an enumeration for Usages
-type CertificateSpecUsages string
+// CertificateUsages represents an enumeration for Usages
+type CertificateUsages string
 
 var (
-	// CertificateSpecUsagesSigning Usages enum value "signing"
-	CertificateSpecUsagesSigning CertificateSpecUsages = "signing"
-	// CertificateSpecUsagesDigitalSignature Usages enum value "digital signature"
-	CertificateSpecUsagesDigitalSignature CertificateSpecUsages = "digital signature"
-	// CertificateSpecUsagesContentCommitment Usages enum value "content commitment"
-	CertificateSpecUsagesContentCommitment CertificateSpecUsages = "content commitment"
-	// CertificateSpecUsagesKeyEncipherment Usages enum value "key encipherment"
-	CertificateSpecUsagesKeyEncipherment CertificateSpecUsages = "key encipherment"
-	// CertificateSpecUsagesKeyAgreement Usages enum value "key agreement"
-	CertificateSpecUsagesKeyAgreement CertificateSpecUsages = "key agreement"
-	// CertificateSpecUsagesDataEncipherment Usages enum value "data encipherment"
-	CertificateSpecUsagesDataEncipherment CertificateSpecUsages = "data encipherment"
-	// CertificateSpecUsagesCertSign Usages enum value "cert sign"
-	CertificateSpecUsagesCertSign CertificateSpecUsages = "cert sign"
-	// CertificateSpecUsagesCrlSign Usages enum value "crl sign"
-	CertificateSpecUsagesCrlSign CertificateSpecUsages = "crl sign"
-	// CertificateSpecUsagesEncipherOnly Usages enum value "encipher only"
-	CertificateSpecUsagesEncipherOnly CertificateSpecUsages = "encipher only"
-	// CertificateSpecUsagesDecipherOnly Usages enum value "decipher only"
-	CertificateSpecUsagesDecipherOnly CertificateSpecUsages = "decipher only"
-	// CertificateSpecUsagesAny Usages enum value "any"
-	CertificateSpecUsagesAny CertificateSpecUsages = "any"
-	// CertificateSpecUsagesServerAuth Usages enum value "server auth"
-	CertificateSpecUsagesServerAuth CertificateSpecUsages = "server auth"
-	// CertificateSpecUsagesClientAuth Usages enum value "client auth"
-	CertificateSpecUsagesClientAuth CertificateSpecUsages = "client auth"
-	// CertificateSpecUsagesCodeSigning Usages enum value "code signing"
-	CertificateSpecUsagesCodeSigning CertificateSpecUsages = "code signing"
-	// CertificateSpecUsagesEmailProtection Usages enum value "email protection"
-	CertificateSpecUsagesEmailProtection CertificateSpecUsages = "email protection"
-	// CertificateSpecUsagesSMime Usages enum value "s/mime"
-	CertificateSpecUsagesSMime CertificateSpecUsages = "s/mime"
-	// CertificateSpecUsagesIpsecEndSystem Usages enum value "ipsec end system"
-	CertificateSpecUsagesIpsecEndSystem CertificateSpecUsages = "ipsec end system"
-	// CertificateSpecUsagesIpsecTunnel Usages enum value "ipsec tunnel"
-	CertificateSpecUsagesIpsecTunnel CertificateSpecUsages = "ipsec tunnel"
-	// CertificateSpecUsagesIpsecUser Usages enum value "ipsec user"
-	CertificateSpecUsagesIpsecUser CertificateSpecUsages = "ipsec user"
-	// CertificateSpecUsagesTimestamping Usages enum value "timestamping"
-	CertificateSpecUsagesTimestamping CertificateSpecUsages = "timestamping"
-	// CertificateSpecUsagesOcspSigning Usages enum value "ocsp signing"
-	CertificateSpecUsagesOcspSigning CertificateSpecUsages = "ocsp signing"
-	// CertificateSpecUsagesMicrosoftSgc Usages enum value "microsoft sgc"
-	CertificateSpecUsagesMicrosoftSgc CertificateSpecUsages = "microsoft sgc"
-	// CertificateSpecUsagesNetscapeSgc Usages enum value "netscape sgc"
-	CertificateSpecUsagesNetscapeSgc CertificateSpecUsages = "netscape sgc"
+	// CertificateUsagesSigning Usages enum value "signing"
+	CertificateUsagesSigning CertificateUsages = "signing"
+	// CertificateUsagesDigitalSignature Usages enum value "digital signature"
+	CertificateUsagesDigitalSignature CertificateUsages = "digital signature"
+	// CertificateUsagesContentCommitment Usages enum value "content commitment"
+	CertificateUsagesContentCommitment CertificateUsages = "content commitment"
+	// CertificateUsagesKeyEncipherment Usages enum value "key encipherment"
+	CertificateUsagesKeyEncipherment CertificateUsages = "key encipherment"
+	// CertificateUsagesKeyAgreement Usages enum value "key agreement"
+	CertificateUsagesKeyAgreement CertificateUsages = "key agreement"
+	// CertificateUsagesDataEncipherment Usages enum value "data encipherment"
+	CertificateUsagesDataEncipherment CertificateUsages = "data encipherment"
+	// CertificateUsagesCertSign Usages enum value "cert sign"
+	CertificateUsagesCertSign CertificateUsages = "cert sign"
+	// CertificateUsagesCrlSign Usages enum value "crl sign"
+	CertificateUsagesCrlSign CertificateUsages = "crl sign"
+	// CertificateUsagesEncipherOnly Usages enum value "encipher only"
+	CertificateUsagesEncipherOnly CertificateUsages = "encipher only"
+	// CertificateUsagesDecipherOnly Usages enum value "decipher only"
+	CertificateUsagesDecipherOnly CertificateUsages = "decipher only"
+	// CertificateUsagesAny Usages enum value "any"
+	CertificateUsagesAny CertificateUsages = "any"
+	// CertificateUsagesServerAuth Usages enum value "server auth"
+	CertificateUsagesServerAuth CertificateUsages = "server auth"
+	// CertificateUsagesClientAuth Usages enum value "client auth"
+	CertificateUsagesClientAuth CertificateUsages = "client auth"
+	// CertificateUsagesCodeSigning Usages enum value "code signing"
+	CertificateUsagesCodeSigning CertificateUsages = "code signing"
+	// CertificateUsagesEmailProtection Usages enum value "email protection"
+	CertificateUsagesEmailProtection CertificateUsages = "email protection"
+	// CertificateUsagesSMime Usages enum value "s/mime"
+	CertificateUsagesSMime CertificateUsages = "s/mime"
+	// CertificateUsagesIpsecEndSystem Usages enum value "ipsec end system"
+	CertificateUsagesIpsecEndSystem CertificateUsages = "ipsec end system"
+	// CertificateUsagesIpsecTunnel Usages enum value "ipsec tunnel"
+	CertificateUsagesIpsecTunnel CertificateUsages = "ipsec tunnel"
+	// CertificateUsagesIpsecUser Usages enum value "ipsec user"
+	CertificateUsagesIpsecUser CertificateUsages = "ipsec user"
+	// CertificateUsagesTimestamping Usages enum value "timestamping"
+	CertificateUsagesTimestamping CertificateUsages = "timestamping"
+	// CertificateUsagesOcspSigning Usages enum value "ocsp signing"
+	CertificateUsagesOcspSigning CertificateUsages = "ocsp signing"
+	// CertificateUsagesMicrosoftSgc Usages enum value "microsoft sgc"
+	CertificateUsagesMicrosoftSgc CertificateUsages = "microsoft sgc"
+	// CertificateUsagesNetscapeSgc Usages enum value "netscape sgc"
+	CertificateUsagesNetscapeSgc CertificateUsages = "netscape sgc"
 )
 
