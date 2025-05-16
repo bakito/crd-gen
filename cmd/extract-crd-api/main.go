@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -12,23 +11,12 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+
+	"github.com/bakito/crd-gen/internal/flags"
 )
 
-type arrayFlags []string
-
-// String is an implementation of the flag.Value interface.
-func (i *arrayFlags) String() string {
-	return fmt.Sprintf("%v", *i)
-}
-
-// Set is an implementation of the flag.Value interface.
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 var (
-	excludeFlags arrayFlags
+	excludeFlags flags.ArrayFlags
 	module       string
 	path         string
 	target       string
