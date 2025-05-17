@@ -41,6 +41,9 @@ func main() {
 		return
 	}
 
+	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
+	defer println()
+
 	var crdGroup string
 	var crdKind string
 	var crdVersion string
