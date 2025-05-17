@@ -119,24 +119,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 			switch prop.Type {
 			case "object":
 				if len(prop.Properties) > 0 {
-					hash := getHash(prop.Properties)
-
-					if ft, ok := r.structHashes[hash]; ok {
-						fieldType = ft
-					} else {
-						kindFieldName := cr.Kind + fieldName
-						var trueFieldName string
-						if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
-							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-							r.structNamesCnt[kindFieldName] = cnt + 1
-						} else {
-							trueFieldName = kindFieldName
-							r.structNamesCnt[kindFieldName] = 1
-						}
-						fieldType = trueFieldName
-						r.structHashes[hash] = trueFieldName
-						r.generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
-					}
+					fieldType = r.generateStructProperty(cr, &prop, fieldName, path, propName)
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
 						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema)
@@ -147,24 +130,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 				}
 			case "array":
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
-					hash := getHash(prop.Items.Schema.Properties)
-
-					if ft, ok := r.structHashes[hash]; ok {
-						fieldType = "[]" + ft
-					} else {
-						kindFieldName := cr.Kind + fieldName
-						var trueFieldName string
-						if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
-							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-							r.structNamesCnt[kindFieldName] = cnt + 1
-						} else {
-							trueFieldName = kindFieldName
-							r.structNamesCnt[kindFieldName] = 1
-						}
-						fieldType = "[]" + trueFieldName
-						r.structHashes[hash] = trueFieldName
-						r.generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
-					}
+					fieldType = "[]" + r.generateStructProperty(cr, prop.Items.Schema, fieldName, path, propName)
 				}
 			default:
 				fieldType = mapType(prop)
@@ -185,53 +151,57 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
-			hash := getHash(prop.Items.Schema.Enum)
-
-			if ft, ok := r.structHashes[hash]; ok {
-				fieldType = "[]" + ft
-			} else {
-				kindFieldName := cr.Kind + fieldName
-				var trueFieldName string
-				if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
-					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-					r.structNamesCnt[kindFieldName] = cnt + 1
-				} else {
-					trueFieldName = kindFieldName
-					r.structNamesCnt[kindFieldName] = 1
-				}
-
-				field.Enums = generateEnum(prop.Items.Schema, trueFieldName)
-				field.EnumType = prop.Items.Schema.Type
-				fieldType = "[]" + trueFieldName
-				field.EnumName = trueFieldName
-				r.structHashes[hash] = trueFieldName
-			}
+			fieldType = "[]" + r.generateEnumStruct(cr, prop.Items.Schema, fieldType, fieldName, &field)
 		} else if len(prop.Enum) > 0 {
-			hash := getHash(prop.Enum)
-			if ft, ok := r.structHashes[hash]; ok {
-				fieldType = ft
-			} else {
-				kindFieldName := cr.Kind + fieldName
-				var trueFieldName string
-				if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
-					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-					r.structNamesCnt[kindFieldName] = cnt + 1
-				} else {
-					trueFieldName = kindFieldName
-					r.structNamesCnt[kindFieldName] = 1
-				}
-				field.Enums = generateEnum(&prop, trueFieldName)
-				field.EnumType = prop.Type
-				field.EnumName = trueFieldName
-				fieldType = trueFieldName
-				r.structHashes[hash] = trueFieldName
-			}
+			fieldType = r.generateEnumStruct(cr, &prop, fieldType, fieldName, &field)
 		}
 
 		field.Type = fieldType
 
 		structDef.Fields = append(structDef.Fields, field)
 	}
+}
+
+func (r *CustomResources) generateEnumStruct(cr *CustomResource, prop *apiv1.JSONSchemaProps, fieldType string, fieldName string, field *FieldDef) string {
+	hash := getHash(prop.Enum)
+	if ft, ok := r.structHashes[hash]; ok {
+		fieldType = ft
+	} else {
+		uniqFieldName := r.uniqFieldName(cr, fieldName)
+		field.Enums = generateEnum(prop, uniqFieldName)
+		field.EnumType = prop.Type
+		field.EnumName = uniqFieldName
+		fieldType = uniqFieldName
+		r.structHashes[hash] = uniqFieldName
+	}
+	return fieldType
+}
+
+func (r *CustomResources) uniqFieldName(cr *CustomResource, fieldName string) string {
+	kindFieldName := cr.Kind + fieldName
+	var trueFieldName string
+	if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
+		trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
+		r.structNamesCnt[kindFieldName] = cnt + 1
+	} else {
+		trueFieldName = kindFieldName
+		r.structNamesCnt[kindFieldName] = 1
+	}
+	return trueFieldName
+}
+
+func (r *CustomResources) generateStructProperty(cr *CustomResource, prop *apiv1.JSONSchemaProps, fieldName string, path string, propName string) (fieldType string) {
+	hash := getHash(prop.Properties)
+
+	if ft, ok := r.structHashes[hash]; ok {
+		fieldType = ft
+	} else {
+		uniqFieldName := r.uniqFieldName(cr, fieldName)
+		fieldType = uniqFieldName
+		r.structHashes[hash] = uniqFieldName
+		r.generateStructs(prop, cr, uniqFieldName, path+"."+propName, false)
+	}
+	return fieldType
 }
 
 // ToCamelCase convert string to CamelCase.
