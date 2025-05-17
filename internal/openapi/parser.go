@@ -151,9 +151,9 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
-			fieldType = "[]" + r.generateEnumStruct(cr, prop.Items.Schema, fieldName, &field)
+			fieldType = "[]" + r.generateEnumStruct(cr, prop.Items.Schema, fieldName, &field, path)
 		} else if len(prop.Enum) > 0 {
-			fieldType = r.generateEnumStruct(cr, &prop, fieldName, &field)
+			fieldType = r.generateEnumStruct(cr, &prop, fieldName, &field, path)
 		}
 
 		field.Type = fieldType
@@ -167,12 +167,13 @@ func (r *CustomResources) generateEnumStruct(
 	prop *apiv1.JSONSchemaProps,
 	fieldName string,
 	field *FieldDef,
+	path string,
 ) (fieldType string) {
 	hash := getHash(prop.Enum)
 	if ft, ok := r.structHashes[hash]; ok {
 		fieldType = ft
 	} else {
-		uniqFieldName := r.newUniqFieldName(cr, fieldName, false)
+		uniqFieldName := r.newUniqFieldName(cr, fieldName, false, path)
 		field.Enums = generateEnum(prop, uniqFieldName)
 		field.EnumType = prop.Type
 		field.EnumName = uniqFieldName
@@ -182,18 +183,33 @@ func (r *CustomResources) generateEnumStruct(
 	return fieldType
 }
 
-func (r *CustomResources) newUniqFieldName(cr *CustomResource, fieldName string, root bool) string {
+func (r *CustomResources) newUniqFieldName(cr *CustomResource, fieldName string, root bool, path string) string {
 	name := fieldName
-	if _, ok := r.structNames[name]; !root && !ok {
-		r.structNames[name] = true
-		return name
+	if !root { // root structs should have kind prefix
+		if _, ok := r.structNames[name]; !ok {
+			r.structNames[name] = true
+			return name
+		}
 	}
 	name = cr.Kind + fieldName
 	if _, ok := r.structNames[name]; !ok {
 		r.structNames[name] = true
 		return name
 	}
-	return ""
+
+	paths := strings.Split(path, ".")
+	var prefix string
+	for i := len(paths) - 1; i >= 0; i-- {
+		prefix = ToCamelCase(paths[i]) + prefix
+		name = prefix + fieldName
+		if _, ok := r.structNames[name]; !ok {
+			r.structNames[name] = true
+			return name
+		}
+	}
+
+	hash := md5.Sum([]byte(path + "." + fieldName))
+	return fieldName + "_" + hex.EncodeToString(hash[:])
 }
 
 func (r *CustomResources) generateStructProperty(
@@ -207,7 +223,7 @@ func (r *CustomResources) generateStructProperty(
 	if ft, ok := r.structHashes[hash]; ok {
 		fieldType = ft
 	} else {
-		uniqFieldName := r.newUniqFieldName(cr, fieldName, root)
+		uniqFieldName := r.newUniqFieldName(cr, fieldName, root, path)
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
 		r.generateStructs(prop, cr, uniqFieldName, path+"."+propName, false)
