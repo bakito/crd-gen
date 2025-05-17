@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log/slog"
 	"os"
@@ -46,6 +47,10 @@ func main() {
 		return
 	}
 
+	slog.With("target", target, "path", path, "module", module,
+		"exclude", excludeFlags, "clear", clearTarget, "use-git", useGit).Info("generate-crd-api")
+	defer println()
+
 	var excludes []*regexp.Regexp
 	for _, excludeFlag := range excludeFlags {
 		excludes = append(excludes, regexp.MustCompile(excludeFlag))
@@ -62,10 +67,13 @@ func main() {
 	if useGit {
 		slog.With("module", module, "tmp", tmp).Info("Cloning module")
 		info := strings.Split(module, "@")
+
+		var out bytes.Buffer
 		r, err := git.PlainClone(tmp, false, &git.CloneOptions{
 			URL:      "https://" + info[0],
-			Progress: os.Stdout,
+			Progress: &out,
 		})
+		slog.Debug("Git clone output", "output", out.String())
 		if err != nil {
 			slog.Error("Failed to clone module", "error", err)
 			return
@@ -85,24 +93,33 @@ func main() {
 			}
 		}
 	} else {
+		var execOut bytes.Buffer
+		var execErr bytes.Buffer
 		cmd := exec.Command("go", "mod", "download", module)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = &execOut
+		cmd.Stderr = &execErr
 
 		cmd.Env = append(os.Environ(), "GOMODCACHE="+tmp)
 
 		slog.With("module", module, "tmp", tmp).Info("Downloading")
 		err = cmd.Run()
+		slog.Debug("go mod download output", "output", execOut.String())
 		if err != nil {
-			slog.Error("Failed to download module", "error", err)
+			slog.Error("Failed to download module", "error", err, "stdout",
+				execOut.String(), "stderr", execErr.String())
 			return
 		}
+
+		execOut = bytes.Buffer{}
+		execErr = bytes.Buffer{}
+
 		cmd = exec.Command("chmod", "+w", "-R", tmp)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = &execOut
+		cmd.Stderr = &execErr
 		err = cmd.Run()
 		if err != nil {
-			slog.Error("Failed to download module", "error", err)
+			slog.Error("Failed to download module", "error", err, "stdout",
+				execOut.String(), "stderr", execErr.String())
 			return
 		}
 		moduleRoot = filepath.Join(tmp, module)
