@@ -34,6 +34,13 @@ type Certificate struct {
 }
 
 
+// AdditionalOutputFormats represents a Certificate.spec.additionalOutputFormats
+type AdditionalOutputFormats struct {
+	// Type is the name of the format type that should be written to the
+	// Certificate's target Secret.
+	Type Type `json:"type,omitempty"`
+}
+
 // CertificateSpec represents a Certificate.spec
 type CertificateSpec struct {
 	// Defines extra output formats of the private key and signed certificate chain
@@ -42,7 +49,7 @@ type CertificateSpec struct {
 	// This is a Beta Feature enabled by default. It can be disabled with the
 	// `--feature-gates=AdditionalCertificateOutputFormats=false` option set on both
 	// the controller and webhook components.
-	AdditionalOutputFormats []CertificateSpecAdditionalOutputFormats `json:"additionalOutputFormats,omitempty"`
+	AdditionalOutputFormats []AdditionalOutputFormats `json:"additionalOutputFormats,omitempty"`
 	// Requested common name X509 certificate subject attribute.
 	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
 	// NOTE: TLS clients will ignore this value when any subject alternative name is
@@ -84,9 +91,9 @@ type CertificateSpec struct {
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	IssuerRef CertificateSpecIssuerRef `json:"issuerRef,omitempty"`
+	IssuerRef IssuerRef `json:"issuerRef,omitempty"`
 	// Additional keystore output formats to be stored in the Certificate's Secret.
-	Keystores CertificateSpecKeystores `json:"keystores,omitempty"`
+	Keystores Keystores `json:"keystores,omitempty"`
 	// Requested X.509 certificate subject, represented using the LDAP "String
 	// Representation of a Distinguished Name" [1].
 	// Important: the LDAP string format also specifies the order of the attributes
@@ -104,15 +111,15 @@ type CertificateSpec struct {
 	// This is an Alpha Feature and is only enabled with the
 	// `--feature-gates=NameConstraints=true` option set on both
 	// the controller and webhook components.
-	NameConstraints CertificateSpecNameConstraints `json:"nameConstraints,omitempty"`
+	NameConstraints NameConstraints `json:"nameConstraints,omitempty"`
 	// `otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37
 	// Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`.
 	// Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3
 	// You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.
-	OtherNames []CertificateSpecOtherNames `json:"otherNames,omitempty"`
+	OtherNames []OtherNames `json:"otherNames,omitempty"`
 	// Private key options. These include the key algorithm and size, the used
 	// encoding and the rotation policy.
-	PrivateKey CertificateSpecPrivateKey `json:"privateKey,omitempty"`
+	PrivateKey PrivateKey `json:"privateKey,omitempty"`
 	// How long before the currently issued certificate's expiry cert-manager should
 	// renew the certificate. For example, if a certificate is valid for 60 minutes,
 	// and `renewBefore=10m`, cert-manager will begin to attempt to renew the certificate
@@ -163,13 +170,13 @@ type CertificateSpec struct {
 	// SecretTemplate when added or removed. SecretTemplate annotations are added
 	// in conjunction with, and cannot overwrite, the base set of annotations
 	// cert-manager sets on the Certificate's Secret.
-	SecretTemplate CertificateSpecSecretTemplate `json:"secretTemplate,omitempty"`
+	SecretTemplate SecretTemplate `json:"secretTemplate,omitempty"`
 	// Requested set of X509 certificate subject attributes.
 	// More info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6
 	// 
 	// The common name attribute is specified separately in the `commonName` field.
 	// Cannot be set if the `literalSubject` field is set.
-	Subject CertificateSpecSubject `json:"subject,omitempty"`
+	Subject Subject `json:"subject,omitempty"`
 	// Requested URI subject alternative names.
 	Uris []string `json:"uris,omitempty"`
 	// Requested key usages and extended key usages.
@@ -178,239 +185,14 @@ type CertificateSpec struct {
 	// will additionally be encoded in the `request` field which contains the CSR blob.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []CertificateSpecUsages `json:"usages,omitempty"`
-}
-
-// CertificateSpecAdditionalOutputFormats represents a Certificate.spec.additionalOutputFormats
-type CertificateSpecAdditionalOutputFormats struct {
-	// Type is the name of the format type that should be written to the
-	// Certificate's target Secret.
-	Type CertificateSpecAdditionalOutputFormatsType `json:"type,omitempty"`
-}
-
-// CertificateSpecIssuerRef represents a Certificate.spec.issuerRef
-type CertificateSpecIssuerRef struct {
-	// Group of the resource being referred to.
-	Group string `json:"group,omitempty"`
-	// Kind of the resource being referred to.
-	Kind string `json:"kind,omitempty"`
-	// Name of the resource being referred to.
-	Name string `json:"name,omitempty"`
-}
-
-// CertificateSpecKeystores represents a Certificate.spec.keystores
-type CertificateSpecKeystores struct {
-	// JKS configures options for storing a JKS keystore in the
-	// `spec.secretName` Secret resource.
-	Jks CertificateSpecKeystoresJks `json:"jks,omitempty"`
-	// PKCS12 configures options for storing a PKCS12 keystore in the
-	// `spec.secretName` Secret resource.
-	Pkcs12 CertificateSpecKeystoresPkcs12 `json:"pkcs12,omitempty"`
-}
-
-// CertificateSpecKeystoresJks represents a Certificate.spec.keystores.jks
-type CertificateSpecKeystoresJks struct {
-	// Alias specifies the alias of the key in the keystore, required by the JKS format.
-	// If not provided, the default alias `certificate` will be used.
-	Alias string `json:"alias,omitempty"`
-	// Create enables JKS keystore creation for the Certificate.
-	// If true, a file named `keystore.jks` will be created in the target
-	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef` or `password`.
-	// The keystore file will be updated immediately.
-	// If the issuer provided a CA certificate, a file named `truststore.jks`
-	// will also be created in the target Secret resource, encrypted using the
-	// password stored in `passwordSecretRef`
-	// containing the issuing Certificate Authority
-	Create bool `json:"create,omitempty"`
-	// Password provides a literal password used to encrypt the JKS keystore.
-	// Mutually exclusive with passwordSecretRef.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	Password string `json:"password,omitempty"`
-	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
-	// containing the password used to encrypt the JKS keystore.
-	// Mutually exclusive with password.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	PasswordSecretRef CertificateSpecKeystoresJksPasswordSecretRef `json:"passwordSecretRef,omitempty"`
-}
-
-// CertificateSpecKeystoresJksPasswordSecretRef represents a Certificate.spec.keystores.jks.passwordSecretRef
-type CertificateSpecKeystoresJksPasswordSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// CertificateSpecKeystoresPkcs12 represents a Certificate.spec.keystores.pkcs12
-type CertificateSpecKeystoresPkcs12 struct {
-	// Create enables PKCS12 keystore creation for the Certificate.
-	// If true, a file named `keystore.p12` will be created in the target
-	// Secret resource, encrypted using the password stored in
-	// `passwordSecretRef` or in `password`.
-	// The keystore file will be updated immediately.
-	// If the issuer provided a CA certificate, a file named `truststore.p12` will
-	// also be created in the target Secret resource, encrypted using the
-	// password stored in `passwordSecretRef` containing the issuing Certificate
-	// Authority
-	Create bool `json:"create,omitempty"`
-	// Password provides a literal password used to encrypt the PKCS#12 keystore.
-	// Mutually exclusive with passwordSecretRef.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	Password string `json:"password,omitempty"`
-	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
-	// containing the password used to encrypt the PKCS#12 keystore.
-	// Mutually exclusive with password.
-	// One of password or passwordSecretRef must provide a password with a non-zero length.
-	PasswordSecretRef CertificateSpecKeystoresPkcs12PasswordSecretRef `json:"passwordSecretRef,omitempty"`
-	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
-	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
-	// 
-	// If provided, allowed values are:
-	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
-	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
-	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
-	// (eg. because of company policy). Please note that the security of the algorithm is not that important
-	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
-	Profile CertificateSpecKeystoresPkcs12Profile `json:"profile,omitempty"`
-}
-
-// CertificateSpecKeystoresPkcs12PasswordSecretRef represents a Certificate.spec.keystores.pkcs12.passwordSecretRef
-type CertificateSpecKeystoresPkcs12PasswordSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// CertificateSpecNameConstraints represents a Certificate.spec.nameConstraints
-type CertificateSpecNameConstraints struct {
-	// if true then the name constraints are marked critical.
-	Critical bool `json:"critical,omitempty"`
-	// Excluded contains the constraints which must be disallowed. Any name matching a
-	// restriction in the excluded field is invalid regardless
-	// of information appearing in the permitted
-	Excluded CertificateSpecNameConstraintsExcluded `json:"excluded,omitempty"`
-	// Permitted contains the constraints in which the names must be located.
-	Permitted CertificateSpecNameConstraintsPermitted `json:"permitted,omitempty"`
-}
-
-// CertificateSpecNameConstraintsExcluded represents a Certificate.spec.nameConstraints.excluded
-type CertificateSpecNameConstraintsExcluded struct {
-	// DNSDomains is a list of DNS domains that are permitted or excluded.
-	DnsDomains []string `json:"dnsDomains,omitempty"`
-	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
-	EmailAddresses []string `json:"emailAddresses,omitempty"`
-	// IPRanges is a list of IP Ranges that are permitted or excluded.
-	// This should be a valid CIDR notation.
-	IpRanges []string `json:"ipRanges,omitempty"`
-	// URIDomains is a list of URI domains that are permitted or excluded.
-	UriDomains []string `json:"uriDomains,omitempty"`
-}
-
-// CertificateSpecNameConstraintsPermitted represents a Certificate.spec.nameConstraints.permitted
-type CertificateSpecNameConstraintsPermitted struct {
-	// DNSDomains is a list of DNS domains that are permitted or excluded.
-	DnsDomains []string `json:"dnsDomains,omitempty"`
-	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
-	EmailAddresses []string `json:"emailAddresses,omitempty"`
-	// IPRanges is a list of IP Ranges that are permitted or excluded.
-	// This should be a valid CIDR notation.
-	IpRanges []string `json:"ipRanges,omitempty"`
-	// URIDomains is a list of URI domains that are permitted or excluded.
-	UriDomains []string `json:"uriDomains,omitempty"`
-}
-
-// CertificateSpecOtherNames represents a Certificate.spec.otherNames
-type CertificateSpecOtherNames struct {
-	// OID is the object identifier for the otherName SAN.
-	// The object identifier must be expressed as a dotted string, for
-	// example, "1.2.840.113556.1.4.221".
-	Oid string `json:"oid,omitempty"`
-	// utf8Value is the string value of the otherName SAN.
-	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
-	Utf8Value string `json:"utf8Value,omitempty"`
-}
-
-// CertificateSpecPrivateKey represents a Certificate.spec.privateKey
-type CertificateSpecPrivateKey struct {
-	// Algorithm is the private key algorithm of the corresponding private key
-	// for this certificate.
-	// 
-	// If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
-	// If `algorithm` is specified and `size` is not provided,
-	// key size of 2048 will be used for `RSA` key algorithm and
-	// key size of 256 will be used for `ECDSA` key algorithm.
-	// key size is ignored when using the `Ed25519` key algorithm.
-	Algorithm CertificateSpecPrivateKeyAlgorithm `json:"algorithm,omitempty"`
-	// The private key cryptography standards (PKCS) encoding for this
-	// certificate's private key to be encoded in.
-	// 
-	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
-	// and PKCS#8, respectively.
-	// Defaults to `PKCS1` if not specified.
-	Encoding CertificateSpecPrivateKeyEncoding `json:"encoding,omitempty"`
-	// RotationPolicy controls how private keys should be regenerated when a
-	// re-issuance is being processed.
-	// 
-	// If set to `Never`, a private key will only be generated if one does not
-	// already exist in the target `spec.secretName`. If one does exist but it
-	// does not have the correct algorithm or size, a warning will be raised
-	// to await user intervention.
-	// If set to `Always`, a private key matching the specified requirements
-	// will be generated whenever a re-issuance occurs.
-	// Default is `Never` for backward compatibility.
-	RotationPolicy CertificateSpecPrivateKeyRotationPolicy `json:"rotationPolicy,omitempty"`
-	// Size is the key bit size of the corresponding private key for this certificate.
-	// 
-	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
-	// and will default to `2048` if not specified.
-	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
-	// and will default to `256` if not specified.
-	// If `algorithm` is set to `Ed25519`, Size is ignored.
-	// No other values are allowed.
-	Size int64 `json:"size,omitempty"`
-}
-
-// CertificateSpecSecretTemplate represents a Certificate.spec.secretTemplate
-type CertificateSpecSecretTemplate struct {
-	// Annotations is a key value map to be copied to the target Kubernetes Secret.
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels is a key value map to be copied to the target Kubernetes Secret.
-	Labels map[string]string `json:"labels,omitempty"`
-}
-
-// CertificateSpecSubject represents a Certificate.spec.subject
-type CertificateSpecSubject struct {
-	// Countries to be used on the Certificate.
-	Countries []string `json:"countries,omitempty"`
-	// Cities to be used on the Certificate.
-	Localities []string `json:"localities,omitempty"`
-	// Organizational Units to be used on the Certificate.
-	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
-	// Organizations to be used on the Certificate.
-	Organizations []string `json:"organizations,omitempty"`
-	// Postal codes to be used on the Certificate.
-	PostalCodes []string `json:"postalCodes,omitempty"`
-	// State/Provinces to be used on the Certificate.
-	Provinces []string `json:"provinces,omitempty"`
-	// Serial number to be used on the Certificate.
-	SerialNumber string `json:"serialNumber,omitempty"`
-	// Street addresses to be used on the Certificate.
-	StreetAddresses []string `json:"streetAddresses,omitempty"`
+	Usages []Usages `json:"usages,omitempty"`
 }
 
 // CertificateStatus represents a Certificate.status
 type CertificateStatus struct {
 	// List of status conditions to indicate the status of certificates.
 	// Known condition types are `Ready` and `Issuing`.
-	Conditions []CertificateStatusConditions `json:"conditions,omitempty"`
+	Conditions []Conditions `json:"conditions,omitempty"`
 	// The number of continuous failed issuance attempts up till now. This
 	// field gets removed (if set) on a successful issuance and gets set to
 	// 1 if unset and an issuance has failed. If an issuance has failed, the
@@ -457,8 +239,8 @@ type CertificateStatus struct {
 	Revision int64 `json:"revision,omitempty"`
 }
 
-// CertificateStatusConditions represents a Certificate.status.conditions
-type CertificateStatusConditions struct {
+// Conditions represents a Certificate.status.conditions
+type Conditions struct {
 	// LastTransitionTime is the timestamp corresponding to the last status
 	// change of this condition.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
@@ -475,126 +257,320 @@ type CertificateStatusConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateStatusConditionsStatus `json:"status,omitempty"`
+	Status Status `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`, `Issuing`).
 	Type string `json:"type,omitempty"`
 }
 
-// CertificateSpecUsages represents an enumeration for Usages
-type CertificateSpecUsages string
+// Excluded represents a Certificate.spec.nameConstraints.excluded
+type Excluded struct {
+	// DNSDomains is a list of DNS domains that are permitted or excluded.
+	DnsDomains []string `json:"dnsDomains,omitempty"`
+	// EmailAddresses is a list of Email Addresses that are permitted or excluded.
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
+	// IPRanges is a list of IP Ranges that are permitted or excluded.
+	// This should be a valid CIDR notation.
+	IpRanges []string `json:"ipRanges,omitempty"`
+	// URIDomains is a list of URI domains that are permitted or excluded.
+	UriDomains []string `json:"uriDomains,omitempty"`
+}
+
+// IssuerRef represents a Certificate.spec.issuerRef
+type IssuerRef struct {
+	// Group of the resource being referred to.
+	Group string `json:"group,omitempty"`
+	// Kind of the resource being referred to.
+	Kind string `json:"kind,omitempty"`
+	// Name of the resource being referred to.
+	Name string `json:"name,omitempty"`
+}
+
+// Jks represents a Certificate.spec.keystores.jks
+type Jks struct {
+	// Alias specifies the alias of the key in the keystore, required by the JKS format.
+	// If not provided, the default alias `certificate` will be used.
+	Alias string `json:"alias,omitempty"`
+	// Create enables JKS keystore creation for the Certificate.
+	// If true, a file named `keystore.jks` will be created in the target
+	// Secret resource, encrypted using the password stored in
+	// `passwordSecretRef` or `password`.
+	// The keystore file will be updated immediately.
+	// If the issuer provided a CA certificate, a file named `truststore.jks`
+	// will also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef`
+	// containing the issuing Certificate Authority
+	Create bool `json:"create,omitempty"`
+	// Password provides a literal password used to encrypt the JKS keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	Password string `json:"password,omitempty"`
+	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	PasswordSecretRef PasswordSecretRef `json:"passwordSecretRef,omitempty"`
+}
+
+// Keystores represents a Certificate.spec.keystores
+type Keystores struct {
+	// JKS configures options for storing a JKS keystore in the
+	// `spec.secretName` Secret resource.
+	Jks Jks `json:"jks,omitempty"`
+	// PKCS12 configures options for storing a PKCS12 keystore in the
+	// `spec.secretName` Secret resource.
+	Pkcs12 Pkcs12 `json:"pkcs12,omitempty"`
+}
+
+// NameConstraints represents a Certificate.spec.nameConstraints
+type NameConstraints struct {
+	// if true then the name constraints are marked critical.
+	Critical bool `json:"critical,omitempty"`
+	// Excluded contains the constraints which must be disallowed. Any name matching a
+	// restriction in the excluded field is invalid regardless
+	// of information appearing in the permitted
+	Excluded Excluded `json:"excluded,omitempty"`
+	// Permitted contains the constraints in which the names must be located.
+	Permitted Excluded `json:"permitted,omitempty"`
+}
+
+// OtherNames represents a Certificate.spec.otherNames
+type OtherNames struct {
+	// OID is the object identifier for the otherName SAN.
+	// The object identifier must be expressed as a dotted string, for
+	// example, "1.2.840.113556.1.4.221".
+	Oid string `json:"oid,omitempty"`
+	// utf8Value is the string value of the otherName SAN.
+	// The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
+	Utf8Value string `json:"utf8Value,omitempty"`
+}
+
+// PasswordSecretRef represents a Certificate.spec.keystores.jks.passwordSecretRef
+type PasswordSecretRef struct {
+	// The key of the entry in the Secret resource's `data` field to be used.
+	// Some instances of this field may be defaulted, in others it may be
+	// required.
+	Key string `json:"key,omitempty"`
+	// Name of the resource being referred to.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	Name string `json:"name,omitempty"`
+}
+
+// Pkcs12 represents a Certificate.spec.keystores.pkcs12
+type Pkcs12 struct {
+	// Create enables PKCS12 keystore creation for the Certificate.
+	// If true, a file named `keystore.p12` will be created in the target
+	// Secret resource, encrypted using the password stored in
+	// `passwordSecretRef` or in `password`.
+	// The keystore file will be updated immediately.
+	// If the issuer provided a CA certificate, a file named `truststore.p12` will
+	// also be created in the target Secret resource, encrypted using the
+	// password stored in `passwordSecretRef` containing the issuing Certificate
+	// Authority
+	Create bool `json:"create,omitempty"`
+	// Password provides a literal password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with passwordSecretRef.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	Password string `json:"password,omitempty"`
+	// PasswordSecretRef is a reference to a non-empty key in a Secret resource
+	// containing the password used to encrypt the PKCS#12 keystore.
+	// Mutually exclusive with password.
+	// One of password or passwordSecretRef must provide a password with a non-zero length.
+	PasswordSecretRef PasswordSecretRef `json:"passwordSecretRef,omitempty"`
+	// Profile specifies the key and certificate encryption algorithms and the HMAC algorithm
+	// used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility.
+	// 
+	// If provided, allowed values are:
+	// `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20.
+	// `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility.
+	// `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms
+	// (eg. because of company policy). Please note that the security of the algorithm is not that important
+	// in reality, because the unencrypted certificate and private key are also stored in the Secret.
+	Profile Profile `json:"profile,omitempty"`
+}
+
+// PrivateKey represents a Certificate.spec.privateKey
+type PrivateKey struct {
+	// Algorithm is the private key algorithm of the corresponding private key
+	// for this certificate.
+	// 
+	// If provided, allowed values are either `RSA`, `ECDSA` or `Ed25519`.
+	// If `algorithm` is specified and `size` is not provided,
+	// key size of 2048 will be used for `RSA` key algorithm and
+	// key size of 256 will be used for `ECDSA` key algorithm.
+	// key size is ignored when using the `Ed25519` key algorithm.
+	Algorithm Algorithm `json:"algorithm,omitempty"`
+	// The private key cryptography standards (PKCS) encoding for this
+	// certificate's private key to be encoded in.
+	// 
+	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
+	// and PKCS#8, respectively.
+	// Defaults to `PKCS1` if not specified.
+	Encoding Encoding `json:"encoding,omitempty"`
+	// RotationPolicy controls how private keys should be regenerated when a
+	// re-issuance is being processed.
+	// 
+	// If set to `Never`, a private key will only be generated if one does not
+	// already exist in the target `spec.secretName`. If one does exist but it
+	// does not have the correct algorithm or size, a warning will be raised
+	// to await user intervention.
+	// If set to `Always`, a private key matching the specified requirements
+	// will be generated whenever a re-issuance occurs.
+	// Default is `Never` for backward compatibility.
+	RotationPolicy RotationPolicy `json:"rotationPolicy,omitempty"`
+	// Size is the key bit size of the corresponding private key for this certificate.
+	// 
+	// If `algorithm` is set to `RSA`, valid values are `2048`, `4096` or `8192`,
+	// and will default to `2048` if not specified.
+	// If `algorithm` is set to `ECDSA`, valid values are `256`, `384` or `521`,
+	// and will default to `256` if not specified.
+	// If `algorithm` is set to `Ed25519`, Size is ignored.
+	// No other values are allowed.
+	Size int64 `json:"size,omitempty"`
+}
+
+// SecretTemplate represents a Certificate.spec.secretTemplate
+type SecretTemplate struct {
+	// Annotations is a key value map to be copied to the target Kubernetes Secret.
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels is a key value map to be copied to the target Kubernetes Secret.
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// Subject represents a Certificate.spec.subject
+type Subject struct {
+	// Countries to be used on the Certificate.
+	Countries []string `json:"countries,omitempty"`
+	// Cities to be used on the Certificate.
+	Localities []string `json:"localities,omitempty"`
+	// Organizational Units to be used on the Certificate.
+	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
+	// Organizations to be used on the Certificate.
+	Organizations []string `json:"organizations,omitempty"`
+	// Postal codes to be used on the Certificate.
+	PostalCodes []string `json:"postalCodes,omitempty"`
+	// State/Provinces to be used on the Certificate.
+	Provinces []string `json:"provinces,omitempty"`
+	// Serial number to be used on the Certificate.
+	SerialNumber string `json:"serialNumber,omitempty"`
+	// Street addresses to be used on the Certificate.
+	StreetAddresses []string `json:"streetAddresses,omitempty"`
+}
+
+// Type represents an enumeration for Type
+type Type string
 
 var (
-	// CertificateSpecUsagesSigning Usages enum value "signing"
-	CertificateSpecUsagesSigning CertificateSpecUsages = "signing"
-	// CertificateSpecUsagesDigitalSignature Usages enum value "digital signature"
-	CertificateSpecUsagesDigitalSignature CertificateSpecUsages = "digital signature"
-	// CertificateSpecUsagesContentCommitment Usages enum value "content commitment"
-	CertificateSpecUsagesContentCommitment CertificateSpecUsages = "content commitment"
-	// CertificateSpecUsagesKeyEncipherment Usages enum value "key encipherment"
-	CertificateSpecUsagesKeyEncipherment CertificateSpecUsages = "key encipherment"
-	// CertificateSpecUsagesKeyAgreement Usages enum value "key agreement"
-	CertificateSpecUsagesKeyAgreement CertificateSpecUsages = "key agreement"
-	// CertificateSpecUsagesDataEncipherment Usages enum value "data encipherment"
-	CertificateSpecUsagesDataEncipherment CertificateSpecUsages = "data encipherment"
-	// CertificateSpecUsagesCertSign Usages enum value "cert sign"
-	CertificateSpecUsagesCertSign CertificateSpecUsages = "cert sign"
-	// CertificateSpecUsagesCrlSign Usages enum value "crl sign"
-	CertificateSpecUsagesCrlSign CertificateSpecUsages = "crl sign"
-	// CertificateSpecUsagesEncipherOnly Usages enum value "encipher only"
-	CertificateSpecUsagesEncipherOnly CertificateSpecUsages = "encipher only"
-	// CertificateSpecUsagesDecipherOnly Usages enum value "decipher only"
-	CertificateSpecUsagesDecipherOnly CertificateSpecUsages = "decipher only"
-	// CertificateSpecUsagesAny Usages enum value "any"
-	CertificateSpecUsagesAny CertificateSpecUsages = "any"
-	// CertificateSpecUsagesServerAuth Usages enum value "server auth"
-	CertificateSpecUsagesServerAuth CertificateSpecUsages = "server auth"
-	// CertificateSpecUsagesClientAuth Usages enum value "client auth"
-	CertificateSpecUsagesClientAuth CertificateSpecUsages = "client auth"
-	// CertificateSpecUsagesCodeSigning Usages enum value "code signing"
-	CertificateSpecUsagesCodeSigning CertificateSpecUsages = "code signing"
-	// CertificateSpecUsagesEmailProtection Usages enum value "email protection"
-	CertificateSpecUsagesEmailProtection CertificateSpecUsages = "email protection"
-	// CertificateSpecUsagesSMime Usages enum value "s/mime"
-	CertificateSpecUsagesSMime CertificateSpecUsages = "s/mime"
-	// CertificateSpecUsagesIpsecEndSystem Usages enum value "ipsec end system"
-	CertificateSpecUsagesIpsecEndSystem CertificateSpecUsages = "ipsec end system"
-	// CertificateSpecUsagesIpsecTunnel Usages enum value "ipsec tunnel"
-	CertificateSpecUsagesIpsecTunnel CertificateSpecUsages = "ipsec tunnel"
-	// CertificateSpecUsagesIpsecUser Usages enum value "ipsec user"
-	CertificateSpecUsagesIpsecUser CertificateSpecUsages = "ipsec user"
-	// CertificateSpecUsagesTimestamping Usages enum value "timestamping"
-	CertificateSpecUsagesTimestamping CertificateSpecUsages = "timestamping"
-	// CertificateSpecUsagesOcspSigning Usages enum value "ocsp signing"
-	CertificateSpecUsagesOcspSigning CertificateSpecUsages = "ocsp signing"
-	// CertificateSpecUsagesMicrosoftSgc Usages enum value "microsoft sgc"
-	CertificateSpecUsagesMicrosoftSgc CertificateSpecUsages = "microsoft sgc"
-	// CertificateSpecUsagesNetscapeSgc Usages enum value "netscape sgc"
-	CertificateSpecUsagesNetscapeSgc CertificateSpecUsages = "netscape sgc"
+	// TypeDER Type enum value "DER"
+	TypeDER Type = "DER"
+	// TypeCombinedPEM Type enum value "CombinedPEM"
+	TypeCombinedPEM Type = "CombinedPEM"
 )
 
-// CertificateSpecAdditionalOutputFormatsType represents an enumeration for Type
-type CertificateSpecAdditionalOutputFormatsType string
+// Usages represents an enumeration for Usages
+type Usages string
 
 var (
-	// CertificateSpecAdditionalOutputFormatsTypeDER Type enum value "DER"
-	CertificateSpecAdditionalOutputFormatsTypeDER CertificateSpecAdditionalOutputFormatsType = "DER"
-	// CertificateSpecAdditionalOutputFormatsTypeCombinedPEM Type enum value "CombinedPEM"
-	CertificateSpecAdditionalOutputFormatsTypeCombinedPEM CertificateSpecAdditionalOutputFormatsType = "CombinedPEM"
+	// UsagesSigning Usages enum value "signing"
+	UsagesSigning Usages = "signing"
+	// UsagesDigitalSignature Usages enum value "digital signature"
+	UsagesDigitalSignature Usages = "digital signature"
+	// UsagesContentCommitment Usages enum value "content commitment"
+	UsagesContentCommitment Usages = "content commitment"
+	// UsagesKeyEncipherment Usages enum value "key encipherment"
+	UsagesKeyEncipherment Usages = "key encipherment"
+	// UsagesKeyAgreement Usages enum value "key agreement"
+	UsagesKeyAgreement Usages = "key agreement"
+	// UsagesDataEncipherment Usages enum value "data encipherment"
+	UsagesDataEncipherment Usages = "data encipherment"
+	// UsagesCertSign Usages enum value "cert sign"
+	UsagesCertSign Usages = "cert sign"
+	// UsagesCrlSign Usages enum value "crl sign"
+	UsagesCrlSign Usages = "crl sign"
+	// UsagesEncipherOnly Usages enum value "encipher only"
+	UsagesEncipherOnly Usages = "encipher only"
+	// UsagesDecipherOnly Usages enum value "decipher only"
+	UsagesDecipherOnly Usages = "decipher only"
+	// UsagesAny Usages enum value "any"
+	UsagesAny Usages = "any"
+	// UsagesServerAuth Usages enum value "server auth"
+	UsagesServerAuth Usages = "server auth"
+	// UsagesClientAuth Usages enum value "client auth"
+	UsagesClientAuth Usages = "client auth"
+	// UsagesCodeSigning Usages enum value "code signing"
+	UsagesCodeSigning Usages = "code signing"
+	// UsagesEmailProtection Usages enum value "email protection"
+	UsagesEmailProtection Usages = "email protection"
+	// UsagesSMime Usages enum value "s/mime"
+	UsagesSMime Usages = "s/mime"
+	// UsagesIpsecEndSystem Usages enum value "ipsec end system"
+	UsagesIpsecEndSystem Usages = "ipsec end system"
+	// UsagesIpsecTunnel Usages enum value "ipsec tunnel"
+	UsagesIpsecTunnel Usages = "ipsec tunnel"
+	// UsagesIpsecUser Usages enum value "ipsec user"
+	UsagesIpsecUser Usages = "ipsec user"
+	// UsagesTimestamping Usages enum value "timestamping"
+	UsagesTimestamping Usages = "timestamping"
+	// UsagesOcspSigning Usages enum value "ocsp signing"
+	UsagesOcspSigning Usages = "ocsp signing"
+	// UsagesMicrosoftSgc Usages enum value "microsoft sgc"
+	UsagesMicrosoftSgc Usages = "microsoft sgc"
+	// UsagesNetscapeSgc Usages enum value "netscape sgc"
+	UsagesNetscapeSgc Usages = "netscape sgc"
 )
 
-// CertificateSpecKeystoresPkcs12Profile represents an enumeration for Profile
-type CertificateSpecKeystoresPkcs12Profile string
+// Status represents an enumeration for Status
+type Status string
 
 var (
-	// CertificateSpecKeystoresPkcs12ProfileLegacyRC2 Profile enum value "LegacyRC2"
-	CertificateSpecKeystoresPkcs12ProfileLegacyRC2 CertificateSpecKeystoresPkcs12Profile = "LegacyRC2"
-	// CertificateSpecKeystoresPkcs12ProfileLegacyDES Profile enum value "LegacyDES"
-	CertificateSpecKeystoresPkcs12ProfileLegacyDES CertificateSpecKeystoresPkcs12Profile = "LegacyDES"
-	// CertificateSpecKeystoresPkcs12ProfileModern2023 Profile enum value "Modern2023"
-	CertificateSpecKeystoresPkcs12ProfileModern2023 CertificateSpecKeystoresPkcs12Profile = "Modern2023"
+	// StatusTrue Status enum value "True"
+	StatusTrue Status = "True"
+	// StatusFalse Status enum value "False"
+	StatusFalse Status = "False"
+	// StatusUnknown Status enum value "Unknown"
+	StatusUnknown Status = "Unknown"
 )
 
-// CertificateSpecPrivateKeyAlgorithm represents an enumeration for Algorithm
-type CertificateSpecPrivateKeyAlgorithm string
+// Profile represents an enumeration for Profile
+type Profile string
 
 var (
-	// CertificateSpecPrivateKeyAlgorithmRSA Algorithm enum value "RSA"
-	CertificateSpecPrivateKeyAlgorithmRSA CertificateSpecPrivateKeyAlgorithm = "RSA"
-	// CertificateSpecPrivateKeyAlgorithmECDSA Algorithm enum value "ECDSA"
-	CertificateSpecPrivateKeyAlgorithmECDSA CertificateSpecPrivateKeyAlgorithm = "ECDSA"
-	// CertificateSpecPrivateKeyAlgorithmEd25519 Algorithm enum value "Ed25519"
-	CertificateSpecPrivateKeyAlgorithmEd25519 CertificateSpecPrivateKeyAlgorithm = "Ed25519"
+	// ProfileLegacyRC2 Profile enum value "LegacyRC2"
+	ProfileLegacyRC2 Profile = "LegacyRC2"
+	// ProfileLegacyDES Profile enum value "LegacyDES"
+	ProfileLegacyDES Profile = "LegacyDES"
+	// ProfileModern2023 Profile enum value "Modern2023"
+	ProfileModern2023 Profile = "Modern2023"
 )
 
-// CertificateSpecPrivateKeyEncoding represents an enumeration for Encoding
-type CertificateSpecPrivateKeyEncoding string
+// Algorithm represents an enumeration for Algorithm
+type Algorithm string
 
 var (
-	// CertificateSpecPrivateKeyEncodingPKCS1 Encoding enum value "PKCS1"
-	CertificateSpecPrivateKeyEncodingPKCS1 CertificateSpecPrivateKeyEncoding = "PKCS1"
-	// CertificateSpecPrivateKeyEncodingPKCS8 Encoding enum value "PKCS8"
-	CertificateSpecPrivateKeyEncodingPKCS8 CertificateSpecPrivateKeyEncoding = "PKCS8"
+	// AlgorithmRSA Algorithm enum value "RSA"
+	AlgorithmRSA Algorithm = "RSA"
+	// AlgorithmECDSA Algorithm enum value "ECDSA"
+	AlgorithmECDSA Algorithm = "ECDSA"
+	// AlgorithmEd25519 Algorithm enum value "Ed25519"
+	AlgorithmEd25519 Algorithm = "Ed25519"
 )
 
-// CertificateSpecPrivateKeyRotationPolicy represents an enumeration for RotationPolicy
-type CertificateSpecPrivateKeyRotationPolicy string
+// Encoding represents an enumeration for Encoding
+type Encoding string
 
 var (
-	// CertificateSpecPrivateKeyRotationPolicyNever RotationPolicy enum value "Never"
-	CertificateSpecPrivateKeyRotationPolicyNever CertificateSpecPrivateKeyRotationPolicy = "Never"
-	// CertificateSpecPrivateKeyRotationPolicyAlways RotationPolicy enum value "Always"
-	CertificateSpecPrivateKeyRotationPolicyAlways CertificateSpecPrivateKeyRotationPolicy = "Always"
+	// EncodingPKCS1 Encoding enum value "PKCS1"
+	EncodingPKCS1 Encoding = "PKCS1"
+	// EncodingPKCS8 Encoding enum value "PKCS8"
+	EncodingPKCS8 Encoding = "PKCS8"
 )
 
-// CertificateStatusConditionsStatus represents an enumeration for Status
-type CertificateStatusConditionsStatus string
+// RotationPolicy represents an enumeration for RotationPolicy
+type RotationPolicy string
 
 var (
-	// CertificateStatusConditionsStatusTrue Status enum value "True"
-	CertificateStatusConditionsStatusTrue CertificateStatusConditionsStatus = "True"
-	// CertificateStatusConditionsStatusFalse Status enum value "False"
-	CertificateStatusConditionsStatusFalse CertificateStatusConditionsStatus = "False"
-	// CertificateStatusConditionsStatusUnknown Status enum value "Unknown"
-	CertificateStatusConditionsStatusUnknown CertificateStatusConditionsStatus = "Unknown"
+	// RotationPolicyNever RotationPolicy enum value "Never"
+	RotationPolicyNever RotationPolicy = "Never"
+	// RotationPolicyAlways RotationPolicy enum value "Always"
+	RotationPolicyAlways RotationPolicy = "Always"
 )
 

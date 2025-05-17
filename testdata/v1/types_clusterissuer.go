@@ -31,28 +31,8 @@ type ClusterIssuer struct {
 }
 
 
-// ClusterIssuerSpec represents a ClusterIssuer.spec
-type ClusterIssuerSpec struct {
-	// ACME configures this issuer to communicate with a RFC8555 (ACME) server
-	// to obtain signed x509 certificates.
-	Acme ClusterIssuerSpecAcme `json:"acme,omitempty"`
-	// CA configures this issuer to sign certificates using a signing CA keypair
-	// stored in a Secret resource.
-	// This is used to build internal PKIs that are managed by cert-manager.
-	Ca ClusterIssuerSpecCa `json:"ca,omitempty"`
-	// SelfSigned configures this issuer to 'self sign' certificates using the
-	// private key used to create the CertificateRequest object.
-	SelfSigned ClusterIssuerSpecSelfSigned `json:"selfSigned,omitempty"`
-	// Vault configures this issuer to sign certificates using a HashiCorp Vault
-	// PKI backend.
-	Vault ClusterIssuerSpecVault `json:"vault,omitempty"`
-	// Venafi configures this issuer to sign certificates using a Venafi TPP
-	// or Venafi Cloud policy zone.
-	Venafi ClusterIssuerSpecVenafi `json:"venafi,omitempty"`
-}
-
-// ClusterIssuerSpecAcme represents a ClusterIssuer.spec.acme
-type ClusterIssuerSpecAcme struct {
+// Acme represents a ClusterIssuer.spec.acme
+type Acme struct {
 	// Base64-encoded bundle of PEM CAs which can be used to validate the certificate
 	// chain presented by the ACME server.
 	// Mutually exclusive with SkipTLSVerify; prefer using CABundle to prevent various
@@ -83,7 +63,7 @@ type ClusterIssuerSpecAcme struct {
 	// server.
 	// If set, upon registration cert-manager will attempt to associate the given
 	// external account credentials with the registered ACME account.
-	ExternalAccountBinding ClusterIssuerSpecAcmeExternalAccountBinding `json:"externalAccountBinding,omitempty"`
+	ExternalAccountBinding ExternalAccountBinding `json:"externalAccountBinding,omitempty"`
 	// PreferredChain is the chain to use if the ACME server outputs multiple.
 	// PreferredChain is no guarantee that this one gets delivered by the ACME
 	// endpoint.
@@ -98,7 +78,7 @@ type ClusterIssuerSpecAcme struct {
 	// Optionally, a `key` may be specified to select a specific entry within
 	// the named Secret resource.
 	// If `key` is not specified, a default of `tls.key` will be used.
-	PrivateKeySecretRef ClusterIssuerSpecAcmePrivateKeySecretRef `json:"privateKeySecretRef,omitempty"`
+	PrivateKeySecretRef PasswordSecretRef `json:"privateKeySecretRef,omitempty"`
 	// Server is the URL used to access the ACME server's 'directory' endpoint.
 	// For example, for Let's Encrypt's staging endpoint, you would use:
 	// "https://acme-staging-v02.api.letsencrypt.org/directory".
@@ -119,165 +99,67 @@ type ClusterIssuerSpecAcme struct {
 	// Solver configurations must be provided in order to obtain certificates
 	// from an ACME server.
 	// For more information, see: https://cert-manager.io/docs/configuration/acme/
-	Solvers []ClusterIssuerSpecAcmeSolvers `json:"solvers,omitempty"`
+	Solvers []Solvers `json:"solvers,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeExternalAccountBinding represents a ClusterIssuer.spec.acme.externalAccountBinding
-type ClusterIssuerSpecAcmeExternalAccountBinding struct {
-	// Deprecated: keyAlgorithm field exists for historical compatibility
-	// reasons and should not be used. The algorithm is now hardcoded to HS256
-	// in golang/x/crypto/acme.
-	KeyAlgorithm ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm `json:"keyAlgorithm,omitempty"`
-	// keyID is the ID of the CA key that the External Account is bound to.
-	KeyID string `json:"keyID,omitempty"`
-	// keySecretRef is a Secret Key Selector referencing a data item in a Kubernetes
-	// Secret which holds the symmetric MAC key of the External Account Binding.
-	// The `key` is the index string that is paired with the key data in the
-	// Secret and should not be confused with the key data itself, or indeed with
-	// the External Account Binding keyID above.
-	// The secret key stored in the Secret **must** be un-padded, base64 URL
-	// encoded data.
-	KeySecretRef ClusterIssuerSpecAcmeExternalAccountBindingKeySecretRef `json:"keySecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeExternalAccountBindingKeySecretRef represents a ClusterIssuer.spec.acme.externalAccountBinding.keySecretRef
-type ClusterIssuerSpecAcmeExternalAccountBindingKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmePrivateKeySecretRef represents a ClusterIssuer.spec.acme.privateKeySecretRef
-type ClusterIssuerSpecAcmePrivateKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolvers represents a ClusterIssuer.spec.acme.solvers
-type ClusterIssuerSpecAcmeSolvers struct {
-	// Configures cert-manager to attempt to complete authorizations by
-	// performing the DNS01 challenge flow.
-	Dns01 ClusterIssuerSpecAcmeSolversDns01 `json:"dns01,omitempty"`
-	// Configures cert-manager to attempt to complete authorizations by
-	// performing the HTTP01 challenge flow.
-	// It is not possible to obtain certificates for wildcard domain names
-	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
-	Http01 ClusterIssuerSpecAcmeSolversHttp01 `json:"http01,omitempty"`
-	// Selector selects a set of DNSNames on the Certificate resource that
-	// should be solved using this challenge solver.
-	// If not specified, the solver will be treated as the 'default' solver
-	// with the lowest priority, i.e. if any other solver has a more specific
-	// match, it will be used instead.
-	Selector ClusterIssuerSpecAcmeSolversSelector `json:"selector,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01 represents a ClusterIssuer.spec.acme.solvers.dns01
-type ClusterIssuerSpecAcmeSolversDns01 struct {
-	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
-	// DNS01 challenge records.
-	AcmeDNS ClusterIssuerSpecAcmeSolversDns01AcmeDNS `json:"acmeDNS,omitempty"`
-	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
-	Akamai ClusterIssuerSpecAcmeSolversDns01Akamai `json:"akamai,omitempty"`
-	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
-	AzureDNS ClusterIssuerSpecAcmeSolversDns01AzureDNS `json:"azureDNS,omitempty"`
-	// Use the Google Cloud DNS API to manage DNS01 challenge records.
-	CloudDNS ClusterIssuerSpecAcmeSolversDns01CloudDNS `json:"cloudDNS,omitempty"`
-	// Use the Cloudflare API to manage DNS01 challenge records.
-	Cloudflare ClusterIssuerSpecAcmeSolversDns01Cloudflare `json:"cloudflare,omitempty"`
-	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
-	// records when found in DNS zones.
-	CnameStrategy ClusterIssuerSpecAcmeSolversDns01CnameStrategy `json:"cnameStrategy,omitempty"`
-	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
-	Digitalocean ClusterIssuerSpecAcmeSolversDns01Digitalocean `json:"digitalocean,omitempty"`
-	// Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
-	// to manage DNS01 challenge records.
-	Rfc2136 ClusterIssuerSpecAcmeSolversDns01Rfc2136 `json:"rfc2136,omitempty"`
-	// Use the AWS Route53 API to manage DNS01 challenge records.
-	Route53 ClusterIssuerSpecAcmeSolversDns01Route53 `json:"route53,omitempty"`
-	// Configure an external webhook based DNS01 challenge solver to manage
-	// DNS01 challenge records.
-	Webhook ClusterIssuerSpecAcmeSolversDns01Webhook `json:"webhook,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01AcmeDNS represents a ClusterIssuer.spec.acme.solvers.dns01.acmeDNS
-type ClusterIssuerSpecAcmeSolversDns01AcmeDNS struct {
+// AcmeDNS represents a ClusterIssuer.spec.acme.solvers.dns01.acmeDNS
+type AcmeDNS struct {
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	AccountSecretRef ClusterIssuerSpecAcmeSolversDns01AcmeDNSAccountSecretRef `json:"accountSecretRef,omitempty"`
+	AccountSecretRef PasswordSecretRef `json:"accountSecretRef,omitempty"`
 	
 	Host string `json:"host,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AcmeDNSAccountSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.acmeDNS.accountSecretRef
-type ClusterIssuerSpecAcmeSolversDns01AcmeDNSAccountSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+// Affinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity
+type Affinity struct {
+	// Describes node affinity scheduling rules for the pod.
+	NodeAffinity NodeAffinity `json:"nodeAffinity,omitempty"`
+	// Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
+	PodAffinity PodAffinity `json:"podAffinity,omitempty"`
+	// Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
+	PodAntiAffinity PodAntiAffinity `json:"podAntiAffinity,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01Akamai represents a ClusterIssuer.spec.acme.solvers.dns01.akamai
-type ClusterIssuerSpecAcmeSolversDns01Akamai struct {
+// Akamai represents a ClusterIssuer.spec.acme.solvers.dns01.akamai
+type Akamai struct {
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	AccessTokenSecretRef ClusterIssuerSpecAcmeSolversDns01AkamaiAccessTokenSecretRef `json:"accessTokenSecretRef,omitempty"`
+	AccessTokenSecretRef PasswordSecretRef `json:"accessTokenSecretRef,omitempty"`
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	ClientSecretSecretRef ClusterIssuerSpecAcmeSolversDns01AkamaiClientSecretSecretRef `json:"clientSecretSecretRef,omitempty"`
+	ClientSecretSecretRef PasswordSecretRef `json:"clientSecretSecretRef,omitempty"`
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	ClientTokenSecretRef ClusterIssuerSpecAcmeSolversDns01AkamaiClientTokenSecretRef `json:"clientTokenSecretRef,omitempty"`
+	ClientTokenSecretRef PasswordSecretRef `json:"clientTokenSecretRef,omitempty"`
 	
 	ServiceConsumerDomain string `json:"serviceConsumerDomain,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AkamaiAccessTokenSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.akamai.accessTokenSecretRef
-type ClusterIssuerSpecAcmeSolversDns01AkamaiAccessTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+// AppRole represents a ClusterIssuer.spec.vault.auth.appRole
+type AppRole struct {
+	// Path where the App Role authentication backend is mounted in Vault, e.g:
+	// "approle"
+	Path string `json:"path,omitempty"`
+	// RoleID configured in the App Role authentication backend when setting
+	// up the authentication backend in Vault.
+	RoleId string `json:"roleId,omitempty"`
+	// Reference to a key in a Secret that contains the App Role secret used
+	// to authenticate with Vault.
+	// The `key` field must be specified and denotes which entry within the Secret
+	// resource is used as the app role secret.
+	SecretRef PasswordSecretRef `json:"secretRef,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AkamaiClientSecretSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.akamai.clientSecretSecretRef
-type ClusterIssuerSpecAcmeSolversDns01AkamaiClientSecretSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+// Auth represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth
+type Auth struct {
+	// Kubernetes authenticates with Route53 using AssumeRoleWithWebIdentity
+	// by passing a bound ServiceAccount token.
+	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AkamaiClientTokenSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.akamai.clientTokenSecretRef
-type ClusterIssuerSpecAcmeSolversDns01AkamaiClientTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01AzureDNS represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS
-type ClusterIssuerSpecAcmeSolversDns01AzureDNS struct {
+// AzureDNS represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS
+type AzureDNS struct {
 	// Auth: Azure Service Principal:
 	// The ClientID of the Azure Service Principal used to authenticate with Azure DNS.
 	// If set, ClientSecret and TenantID must also be set.
@@ -285,15 +167,15 @@ type ClusterIssuerSpecAcmeSolversDns01AzureDNS struct {
 	// Auth: Azure Service Principal:
 	// A reference to a Secret containing the password associated with the Service Principal.
 	// If set, ClientID and TenantID must also be set.
-	ClientSecretSecretRef ClusterIssuerSpecAcmeSolversDns01AzureDNSClientSecretSecretRef `json:"clientSecretSecretRef,omitempty"`
+	ClientSecretSecretRef PasswordSecretRef `json:"clientSecretSecretRef,omitempty"`
 	// name of the Azure environment (default AzurePublicCloud)
-	Environment ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment `json:"environment,omitempty"`
+	Environment Environment `json:"environment,omitempty"`
 	// name of the DNS zone that should be used
 	HostedZoneName string `json:"hostedZoneName,omitempty"`
 	// Auth: Azure Workload Identity or Azure Managed Service Identity:
 	// Settings to enable Azure Workload Identity or Azure Managed Service Identity
 	// If set, ClientID, ClientSecret and TenantID must not be set.
-	ManagedIdentity ClusterIssuerSpecAcmeSolversDns01AzureDNSManagedIdentity `json:"managedIdentity,omitempty"`
+	ManagedIdentity ManagedIdentity `json:"managedIdentity,omitempty"`
 	// resource group the DNS zone is located in
 	ResourceGroupName string `json:"resourceGroupName,omitempty"`
 	// ID of the Azure subscription
@@ -304,19 +186,385 @@ type ClusterIssuerSpecAcmeSolversDns01AzureDNS struct {
 	TenantID string `json:"tenantID,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AzureDNSClientSecretSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS.clientSecretSecretRef
-type ClusterIssuerSpecAcmeSolversDns01AzureDNSClientSecretSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
+// Ca represents a ClusterIssuer.spec.ca
+type Ca struct {
+	// The CRL distribution points is an X.509 v3 certificate extension which identifies
+	// the location of the CRL from which the revocation of this certificate can be checked.
+	// If not set, certificates will be issued without distribution points set.
+	CrlDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
+	// IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
+	// it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details.
+	// As an example, such a URL might be "http://ca.domain.com/ca.crt".
+	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
+	// The OCSP server list is an X.509 v3 extension that defines a list of
+	// URLs of OCSP responders. The OCSP responders can be queried for the
+	// revocation status of an issued certificate. If not set, the
+	// certificate will be issued with no OCSP servers set. For example, an
+	// OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
+	OcspServers []string `json:"ocspServers,omitempty"`
+	// SecretName is the name of the secret used to sign Certificates issued
+	// by this Issuer.
+	SecretName string `json:"secretName,omitempty"`
+}
+
+// ClientCertificate represents a ClusterIssuer.spec.vault.auth.clientCertificate
+type ClientCertificate struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/cert" will be used.
+	MountPath string `json:"mountPath,omitempty"`
+	// Name of the certificate role to authenticate against.
+	// If not set, matching any certificate role, if available.
+	Name string `json:"name,omitempty"`
+	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
+	// tls.crt and tls.key) used to authenticate to Vault using TLS client
+	// authentication.
+	SecretName string `json:"secretName,omitempty"`
+}
+
+// Cloud represents a ClusterIssuer.spec.venafi.cloud
+type Cloud struct {
+	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
+	ApiTokenSecretRef PasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
+	// URL is the base URL for Venafi Cloud.
+	// Defaults to "https://api.venafi.cloud/v1".
+	Url string `json:"url,omitempty"`
+}
+
+// CloudDNS represents a ClusterIssuer.spec.acme.solvers.dns01.cloudDNS
+type CloudDNS struct {
+	// HostedZoneName is an optional field that tells cert-manager in which
+	// Cloud DNS zone the challenge record has to be created.
+	// If left empty cert-manager will automatically choose a zone.
+	HostedZoneName string `json:"hostedZoneName,omitempty"`
+	
+	Project string `json:"project,omitempty"`
+	// A reference to a specific 'key' within a Secret resource.
+	// In some instances, `key` is a required field.
+	ServiceAccountSecretRef PasswordSecretRef `json:"serviceAccountSecretRef,omitempty"`
+}
+
+// Cloudflare represents a ClusterIssuer.spec.acme.solvers.dns01.cloudflare
+type Cloudflare struct {
+	// API key to use to authenticate with Cloudflare.
+	// Note: using an API token to authenticate is now the recommended method
+	// as it allows greater control of permissions.
+	ApiKeySecretRef PasswordSecretRef `json:"apiKeySecretRef,omitempty"`
+	// API token used to authenticate with Cloudflare.
+	ApiTokenSecretRef PasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
+	// Email of the account, only required when using API key based authentication.
+	Email string `json:"email,omitempty"`
+}
+
+// ClusterIssuerAcme represents a ClusterIssuer.status.acme
+type ClusterIssuerAcme struct {
+	// LastPrivateKeyHash is a hash of the private key associated with the latest
+	// registered ACME account, in order to track changes made to registered account
+	// associated with the Issuer
+	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
+	// LastRegisteredEmail is the email associated with the latest registered
+	// ACME account, in order to track changes made to registered account
+	// associated with the  Issuer
+	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
+	// URI is the unique account identifier, which can also be used to retrieve
+	// account details from the CA
+	Uri string `json:"uri,omitempty"`
+}
+
+// ClusterIssuerAuth represents a ClusterIssuer.spec.vault.auth
+type ClusterIssuerAuth struct {
+	// AppRole authenticates with Vault using the App Role auth mechanism,
+	// with the role and secret stored in a Kubernetes Secret resource.
+	AppRole AppRole `json:"appRole,omitempty"`
+	// ClientCertificate authenticates with Vault by presenting a client
+	// certificate during the request's TLS handshake.
+	// Works only when using HTTPS protocol.
+	ClientCertificate ClientCertificate `json:"clientCertificate,omitempty"`
+	// Kubernetes authenticates with Vault by passing the ServiceAccount
+	// token stored in the named Secret resource to the Vault server.
+	Kubernetes ClusterIssuerKubernetes `json:"kubernetes,omitempty"`
+	// TokenSecretRef authenticates with Vault by presenting a token.
+	TokenSecretRef PasswordSecretRef `json:"tokenSecretRef,omitempty"`
+}
+
+// ClusterIssuerConditions represents a ClusterIssuer.status.conditions
+type ClusterIssuerConditions struct {
+	// LastTransitionTime is the timestamp corresponding to the last status
+	// change of this condition.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Message is a human readable description of the details of the last
+	// transition, complementing reason.
+	Message string `json:"message,omitempty"`
+	// If set, this represents the .metadata.generation that the condition was
+	// set based upon.
+	// For instance, if .metadata.generation is currently 12, but the
+	// .status.condition[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the Issuer.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// Reason is a brief machine readable explanation for the condition's last
+	// transition.
+	Reason string `json:"reason,omitempty"`
+	// Status of the condition, one of (`True`, `False`, `Unknown`).
+	Status Status `json:"status,omitempty"`
+	// Type of the condition, known values are (`Ready`).
+	Type string `json:"type,omitempty"`
+}
+
+// ClusterIssuerKubernetes represents a ClusterIssuer.spec.vault.auth.kubernetes
+type ClusterIssuerKubernetes struct {
+	// The Vault mountPath here is the mount path to use when authenticating with
+	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
+	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
+	// default value "/v1/auth/kubernetes" will be used.
+	MountPath string `json:"mountPath,omitempty"`
+	// A required field containing the Vault Role to assume. A Role binds a
+	// Kubernetes ServiceAccount with a set of Vault policies.
+	Role string `json:"role,omitempty"`
+	// The required Secret field containing a Kubernetes ServiceAccount JWT used
+	// for authenticating with Vault. Use of 'ambient credentials' is not
+	// supported.
+	SecretRef PasswordSecretRef `json:"secretRef,omitempty"`
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). Compared to using "secretRef",
+	// using this field means that you don't rely on statically bound tokens. To
+	// use this field, you must configure an RBAC rule to let cert-manager
+	// request a token.
+	ServiceAccountRef ClusterIssuerServiceAccountRef `json:"serviceAccountRef,omitempty"`
+}
+
+// ClusterIssuerMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector.matchExpressions
+type ClusterIssuerMatchExpressions struct {
+	// key is the label key that the selector applies to.
 	Key string `json:"key,omitempty"`
+	// operator represents a key's relationship to a set of values.
+	// Valid operators are In, NotIn, Exists and DoesNotExist.
+	Operator string `json:"operator,omitempty"`
+	// values is an array of string values. If the operator is In or NotIn,
+	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
+	// the values array must be empty. This array is replaced during a strategic
+	// merge patch.
+	Values []string `json:"values,omitempty"`
+}
+
+// ClusterIssuerMetadata represents a ClusterIssuer.spec.acme.solvers.http01.ingress.ingressTemplate.metadata
+type ClusterIssuerMetadata struct {
+	// Annotations that should be added to the created ACME HTTP01 solver ingress.
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels that should be added to the created ACME HTTP01 solver ingress.
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// ClusterIssuerPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution
+type ClusterIssuerPreferredDuringSchedulingIgnoredDuringExecution struct {
+	// Required. A pod affinity term, associated with the corresponding weight.
+	PodAffinityTerm PodAffinityTerm `json:"podAffinityTerm,omitempty"`
+	// weight associated with matching the corresponding podAffinityTerm,
+	// in the range 1-100.
+	Weight int32 `json:"weight,omitempty"`
+}
+
+// ClusterIssuerServiceAccountRef represents a ClusterIssuer.spec.vault.auth.kubernetes.serviceAccountRef
+type ClusterIssuerServiceAccountRef struct {
+	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
+	// consisting of the issuer's namespace and name is always included.
+	Audiences []string `json:"audiences,omitempty"`
+	// Name of the ServiceAccount used to request a token.
+	Name string `json:"name,omitempty"`
+}
+
+// ClusterIssuerSpec represents a ClusterIssuer.spec
+type ClusterIssuerSpec struct {
+	// ACME configures this issuer to communicate with a RFC8555 (ACME) server
+	// to obtain signed x509 certificates.
+	Acme Acme `json:"acme,omitempty"`
+	// CA configures this issuer to sign certificates using a signing CA keypair
+	// stored in a Secret resource.
+	// This is used to build internal PKIs that are managed by cert-manager.
+	Ca Ca `json:"ca,omitempty"`
+	// SelfSigned configures this issuer to 'self sign' certificates using the
+	// private key used to create the CertificateRequest object.
+	SelfSigned SelfSigned `json:"selfSigned,omitempty"`
+	// Vault configures this issuer to sign certificates using a HashiCorp Vault
+	// PKI backend.
+	Vault Vault `json:"vault,omitempty"`
+	// Venafi configures this issuer to sign certificates using a Venafi TPP
+	// or Venafi Cloud policy zone.
+	Venafi Venafi `json:"venafi,omitempty"`
+}
+
+// ClusterIssuerStatus represents a ClusterIssuer.status
+type ClusterIssuerStatus struct {
+	// ACME specific status options.
+	// This field should only be set if the Issuer is configured to use an ACME
+	// server to issue certificates.
+	Acme ClusterIssuerAcme `json:"acme,omitempty"`
+	// List of status conditions to indicate the status of a CertificateRequest.
+	// Known condition types are `Ready`.
+	Conditions []ClusterIssuerConditions `json:"conditions,omitempty"`
+}
+
+// CredentialsRef represents a ClusterIssuer.spec.venafi.tpp.credentialsRef
+type CredentialsRef struct {
 	// Name of the resource being referred to.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	Name string `json:"name,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01AzureDNSManagedIdentity represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS.managedIdentity
-type ClusterIssuerSpecAcmeSolversDns01AzureDNSManagedIdentity struct {
+// Digitalocean represents a ClusterIssuer.spec.acme.solvers.dns01.digitalocean
+type Digitalocean struct {
+	// A reference to a specific 'key' within a Secret resource.
+	// In some instances, `key` is a required field.
+	TokenSecretRef PasswordSecretRef `json:"tokenSecretRef,omitempty"`
+}
+
+// Dns01 represents a ClusterIssuer.spec.acme.solvers.dns01
+type Dns01 struct {
+	// Use the 'ACME DNS' (https://github.com/joohoi/acme-dns) API to manage
+	// DNS01 challenge records.
+	AcmeDNS AcmeDNS `json:"acmeDNS,omitempty"`
+	// Use the Akamai DNS zone management API to manage DNS01 challenge records.
+	Akamai Akamai `json:"akamai,omitempty"`
+	// Use the Microsoft Azure DNS API to manage DNS01 challenge records.
+	AzureDNS AzureDNS `json:"azureDNS,omitempty"`
+	// Use the Google Cloud DNS API to manage DNS01 challenge records.
+	CloudDNS CloudDNS `json:"cloudDNS,omitempty"`
+	// Use the Cloudflare API to manage DNS01 challenge records.
+	Cloudflare Cloudflare `json:"cloudflare,omitempty"`
+	// CNAMEStrategy configures how the DNS01 provider should handle CNAME
+	// records when found in DNS zones.
+	CnameStrategy CnameStrategy `json:"cnameStrategy,omitempty"`
+	// Use the DigitalOcean DNS API to manage DNS01 challenge records.
+	Digitalocean Digitalocean `json:"digitalocean,omitempty"`
+	// Use RFC2136 ("Dynamic Updates in the Domain Name System") (https://datatracker.ietf.org/doc/rfc2136/)
+	// to manage DNS01 challenge records.
+	Rfc2136 Rfc2136 `json:"rfc2136,omitempty"`
+	// Use the AWS Route53 API to manage DNS01 challenge records.
+	Route53 Route53 `json:"route53,omitempty"`
+	// Configure an external webhook based DNS01 challenge solver to manage
+	// DNS01 challenge records.
+	Webhook Webhook `json:"webhook,omitempty"`
+}
+
+// ExternalAccountBinding represents a ClusterIssuer.spec.acme.externalAccountBinding
+type ExternalAccountBinding struct {
+	// Deprecated: keyAlgorithm field exists for historical compatibility
+	// reasons and should not be used. The algorithm is now hardcoded to HS256
+	// in golang/x/crypto/acme.
+	KeyAlgorithm KeyAlgorithm `json:"keyAlgorithm,omitempty"`
+	// keyID is the ID of the CA key that the External Account is bound to.
+	KeyID string `json:"keyID,omitempty"`
+	// keySecretRef is a Secret Key Selector referencing a data item in a Kubernetes
+	// Secret which holds the symmetric MAC key of the External Account Binding.
+	// The `key` is the index string that is paired with the key data in the
+	// Secret and should not be confused with the key data itself, or indeed with
+	// the External Account Binding keyID above.
+	// The secret key stored in the Secret **must** be un-padded, base64 URL
+	// encoded data.
+	KeySecretRef PasswordSecretRef `json:"keySecretRef,omitempty"`
+}
+
+// GatewayHTTPRoute represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute
+type GatewayHTTPRoute struct {
+	// Custom labels that will be applied to HTTPRoutes created by cert-manager
+	// while solving HTTP-01 challenges.
+	Labels map[string]string `json:"labels,omitempty"`
+	// When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute.
+	// cert-manager needs to know which parentRefs should be used when creating
+	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
+	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
+	ParentRefs []ParentRefs `json:"parentRefs,omitempty"`
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges.
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	ServiceType string `json:"serviceType,omitempty"`
+}
+
+// Http01 represents a ClusterIssuer.spec.acme.solvers.http01
+type Http01 struct {
+	// The Gateway API is a sig-network community API that models service networking
+	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
+	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
+	// This solver is experimental, and fields / behaviour may change in the future.
+	GatewayHTTPRoute GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
+	// The ingress based HTTP01 challenge solver will solve challenges by
+	// creating or modifying Ingress resources in order to route requests for
+	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
+	// provisioned by cert-manager for each Challenge to be completed.
+	Ingress Ingress `json:"ingress,omitempty"`
+}
+
+// ImagePullSecrets represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.imagePullSecrets
+type ImagePullSecrets struct {
+	// Name of the referent.
+	// This field is effectively required, but due to backwards compatibility is
+	// allowed to be empty. Instances of this type with an empty value here are
+	// almost certainly wrong.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	Name string `json:"name,omitempty"`
+}
+
+// Ingress represents a ClusterIssuer.spec.acme.solvers.http01.ingress
+type Ingress struct {
+	// This field configures the annotation `kubernetes.io/ingress.class` when
+	// creating Ingress resources to solve ACME challenges that use this
+	// challenge solver. Only one of `class`, `name` or `ingressClassName` may
+	// be specified.
+	Class string `json:"class,omitempty"`
+	// This field configures the field `ingressClassName` on the created Ingress
+	// resources used to solve ACME challenges that use this challenge solver.
+	// This is the recommended way of configuring the ingress class. Only one of
+	// `class`, `name` or `ingressClassName` may be specified.
+	IngressClassName string `json:"ingressClassName,omitempty"`
+	// Optional ingress template used to configure the ACME challenge solver
+	// ingress used for HTTP01 challenges.
+	IngressTemplate IngressTemplate `json:"ingressTemplate,omitempty"`
+	// The name of the ingress resource that should have ACME challenge solving
+	// routes inserted into it in order to solve HTTP01 challenges.
+	// This is typically used in conjunction with ingress controllers like
+	// ingress-gce, which maintains a 1:1 mapping between external IPs and
+	// ingress resources. Only one of `class`, `name` or `ingressClassName` may
+	// be specified.
+	Name string `json:"name,omitempty"`
+	// Optional pod template used to configure the ACME challenge solver pods
+	// used for HTTP01 challenges.
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
+	// Optional service type for Kubernetes solver service. Supported values
+	// are NodePort or ClusterIP. If unset, defaults to NodePort.
+	ServiceType string `json:"serviceType,omitempty"`
+}
+
+// IngressTemplate represents a ClusterIssuer.spec.acme.solvers.http01.ingress.ingressTemplate
+type IngressTemplate struct {
+	// ObjectMeta overrides for the ingress used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	Metadata ClusterIssuerMetadata `json:"metadata,omitempty"`
+}
+
+// Kubernetes represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth.kubernetes
+type Kubernetes struct {
+	// A reference to a service account that will be used to request a bound
+	// token (also known as "projected token"). To use this field, you must
+	// configure an RBAC rule to let cert-manager request a token.
+	ServiceAccountRef ServiceAccountRef `json:"serviceAccountRef,omitempty"`
+}
+
+// LabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector
+type LabelSelector struct {
+	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
+	MatchExpressions []ClusterIssuerMatchExpressions `json:"matchExpressions,omitempty"`
+	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+	// map is equivalent to an element of matchExpressions, whose key field is "key", the
+	// operator is "In", and the values array contains only "value". The requirements are ANDed.
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+}
+
+// ManagedIdentity represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS.managedIdentity
+type ManagedIdentity struct {
 	// client ID of the managed identity, can not be used at the same time as resourceID
 	ClientID string `json:"clientID,omitempty"`
 	// resource ID of the managed identity, can not be used at the same time as clientID
@@ -326,269 +574,51 @@ type ClusterIssuerSpecAcmeSolversDns01AzureDNSManagedIdentity struct {
 	TenantID string `json:"tenantID,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01CloudDNS represents a ClusterIssuer.spec.acme.solvers.dns01.cloudDNS
-type ClusterIssuerSpecAcmeSolversDns01CloudDNS struct {
-	// HostedZoneName is an optional field that tells cert-manager in which
-	// Cloud DNS zone the challenge record has to be created.
-	// If left empty cert-manager will automatically choose a zone.
-	HostedZoneName string `json:"hostedZoneName,omitempty"`
-	
-	Project string `json:"project,omitempty"`
-	// A reference to a specific 'key' within a Secret resource.
-	// In some instances, `key` is a required field.
-	ServiceAccountSecretRef ClusterIssuerSpecAcmeSolversDns01CloudDNSServiceAccountSecretRef `json:"serviceAccountSecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01CloudDNSServiceAccountSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.cloudDNS.serviceAccountSecretRef
-type ClusterIssuerSpecAcmeSolversDns01CloudDNSServiceAccountSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
+// MatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference.matchExpressions
+type MatchExpressions struct {
+	// The label key that the selector applies to.
 	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
+	// Represents a key's relationship to a set of values.
+	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
+	Operator string `json:"operator,omitempty"`
+	// An array of string values. If the operator is In or NotIn,
+	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
+	// the values array must be empty. If the operator is Gt or Lt, the values
+	// array must have a single element, which will be interpreted as an integer.
+	// This array is replaced during a strategic merge patch.
+	Values []string `json:"values,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversDns01Cloudflare represents a ClusterIssuer.spec.acme.solvers.dns01.cloudflare
-type ClusterIssuerSpecAcmeSolversDns01Cloudflare struct {
-	// API key to use to authenticate with Cloudflare.
-	// Note: using an API token to authenticate is now the recommended method
-	// as it allows greater control of permissions.
-	ApiKeySecretRef ClusterIssuerSpecAcmeSolversDns01CloudflareApiKeySecretRef `json:"apiKeySecretRef,omitempty"`
-	// API token used to authenticate with Cloudflare.
-	ApiTokenSecretRef ClusterIssuerSpecAcmeSolversDns01CloudflareApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
-	// Email of the account, only required when using API key based authentication.
-	Email string `json:"email,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01CloudflareApiKeySecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.cloudflare.apiKeySecretRef
-type ClusterIssuerSpecAcmeSolversDns01CloudflareApiKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01CloudflareApiTokenSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.cloudflare.apiTokenSecretRef
-type ClusterIssuerSpecAcmeSolversDns01CloudflareApiTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Digitalocean represents a ClusterIssuer.spec.acme.solvers.dns01.digitalocean
-type ClusterIssuerSpecAcmeSolversDns01Digitalocean struct {
-	// A reference to a specific 'key' within a Secret resource.
-	// In some instances, `key` is a required field.
-	TokenSecretRef ClusterIssuerSpecAcmeSolversDns01DigitaloceanTokenSecretRef `json:"tokenSecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01DigitaloceanTokenSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.digitalocean.tokenSecretRef
-type ClusterIssuerSpecAcmeSolversDns01DigitaloceanTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Rfc2136 represents a ClusterIssuer.spec.acme.solvers.dns01.rfc2136
-type ClusterIssuerSpecAcmeSolversDns01Rfc2136 struct {
-	// The IP address or hostname of an authoritative DNS server supporting
-	// RFC2136 in the form host:port. If the host is an IPv6 address it must be
-	// enclosed in square brackets (e.g [2001:db8::1]) ; port is optional.
-	// This field is required.
-	Nameserver string `json:"nameserver,omitempty"`
-	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
-	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
-	// Supported values are (case-insensitive): ``HMACMD5`` (default),
-	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
-	TsigAlgorithm string `json:"tsigAlgorithm,omitempty"`
-	// The TSIG Key name configured in the DNS.
-	// If ``tsigSecretSecretRef`` is defined, this field is required.
-	TsigKeyName string `json:"tsigKeyName,omitempty"`
-	// The name of the secret containing the TSIG value.
-	// If ``tsigKeyName`` is defined, this field is required.
-	TsigSecretSecretRef ClusterIssuerSpecAcmeSolversDns01Rfc2136TsigSecretSecretRef `json:"tsigSecretSecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Rfc2136TsigSecretSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.rfc2136.tsigSecretSecretRef
-type ClusterIssuerSpecAcmeSolversDns01Rfc2136TsigSecretSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53 represents a ClusterIssuer.spec.acme.solvers.dns01.route53
-type ClusterIssuerSpecAcmeSolversDns01Route53 struct {
-	// The AccessKeyID is used for authentication.
-	// Cannot be set when SecretAccessKeyID is set.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
-	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	AccessKeyID string `json:"accessKeyID,omitempty"`
-	// The SecretAccessKey is used for authentication. If set, pull the AWS
-	// access key ID from a key within a Kubernetes Secret.
-	// Cannot be set when AccessKeyID is set.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
-	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	AccessKeyIDSecretRef ClusterIssuerSpecAcmeSolversDns01Route53AccessKeyIDSecretRef `json:"accessKeyIDSecretRef,omitempty"`
-	// Auth configures how cert-manager authenticates.
-	Auth ClusterIssuerSpecAcmeSolversDns01Route53Auth `json:"auth,omitempty"`
-	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
-	HostedZoneID string `json:"hostedZoneID,omitempty"`
-	// Override the AWS region.
-	// 
-	// Route53 is a global service and does not have regional endpoints but the
-	// region specified here (or via environment variables) is used as a hint to
-	// help compute the correct AWS credential scope and partition when it
-	// connects to Route53. See:
-	// - [Amazon Route 53 endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/r53.html)
-	// - [Global services](https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/global-services.html)
-	// 
-	// If you omit this region field, cert-manager will use the region from
-	// AWS_REGION and AWS_DEFAULT_REGION environment variables, if they are set
-	// in the cert-manager controller Pod.
-	// 
-	// The `region` field is not needed if you use [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
-	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
-	// [Amazon EKS Pod Identity Webhook](https://github.com/aws/amazon-eks-pod-identity-webhook).
-	// In this case this `region` field value is ignored.
-	// 
-	// The `region` field is not needed if you use [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
-	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
-	// [Amazon EKS Pod Identity Agent](https://github.com/aws/eks-pod-identity-agent),
-	// In this case this `region` field value is ignored.
-	Region string `json:"region,omitempty"`
-	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
-	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
-	Role string `json:"role,omitempty"`
-	// The SecretAccessKey is used for authentication.
-	// If neither the Access Key nor Key ID are set, we fall-back to using env
-	// vars, shared credentials file or AWS Instance metadata,
-	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	SecretAccessKeySecretRef ClusterIssuerSpecAcmeSolversDns01Route53SecretAccessKeySecretRef `json:"secretAccessKeySecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53AccessKeyIDSecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.route53.accessKeyIDSecretRef
-type ClusterIssuerSpecAcmeSolversDns01Route53AccessKeyIDSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53Auth represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth
-type ClusterIssuerSpecAcmeSolversDns01Route53Auth struct {
-	// Kubernetes authenticates with Route53 using AssumeRoleWithWebIdentity
-	// by passing a bound ServiceAccount token.
-	Kubernetes ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetes `json:"kubernetes,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetes represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth.kubernetes
-type ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetes struct {
-	// A reference to a service account that will be used to request a bound
-	// token (also known as "projected token"). To use this field, you must
-	// configure an RBAC rule to let cert-manager request a token.
-	ServiceAccountRef ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetesServiceAccountRef `json:"serviceAccountRef,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetesServiceAccountRef represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth.kubernetes.serviceAccountRef
-type ClusterIssuerSpecAcmeSolversDns01Route53AuthKubernetesServiceAccountRef struct {
-	// TokenAudiences is an optional list of audiences to include in the
-	// token passed to AWS. The default token consisting of the issuer's namespace
-	// and name is always included.
-	// If unset the audience defaults to `sts.amazonaws.com`.
-	Audiences []string `json:"audiences,omitempty"`
-	// Name of the ServiceAccount used to request a token.
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Route53SecretAccessKeySecretRef represents a ClusterIssuer.spec.acme.solvers.dns01.route53.secretAccessKeySecretRef
-type ClusterIssuerSpecAcmeSolversDns01Route53SecretAccessKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversDns01Webhook represents a ClusterIssuer.spec.acme.solvers.dns01.webhook
-type ClusterIssuerSpecAcmeSolversDns01Webhook struct {
-	// Additional configuration that should be passed to the webhook apiserver
-	// when challenges are processed.
-	// This can contain arbitrary JSON data.
-	// Secret values should not be specified in this stanza.
-	// If secret values are needed (e.g. credentials for a DNS service), you
-	// should use a SecretKeySelector to reference a Secret resource.
-	// For details on the schema of this field, consult the webhook provider
-	// implementation's documentation.
-	Config *apiextensionsv1.JSON `json:"config,omitempty"`
-	// The API group name that should be used when POSTing ChallengePayload
-	// resources to the webhook apiserver.
-	// This should be the same as the GroupName specified in the webhook
-	// provider implementation.
-	GroupName string `json:"groupName,omitempty"`
-	// The name of the solver to use, as defined in the webhook provider
-	// implementation.
-	// This will typically be the name of the provider, e.g. 'cloudflare'.
-	SolverName string `json:"solverName,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01 represents a ClusterIssuer.spec.acme.solvers.http01
-type ClusterIssuerSpecAcmeSolversHttp01 struct {
-	// The Gateway API is a sig-network community API that models service networking
-	// in Kubernetes (https://gateway-api.sigs.k8s.io/). The Gateway solver will
-	// create HTTPRoutes with the specified labels in the same namespace as the challenge.
-	// This solver is experimental, and fields / behaviour may change in the future.
-	GatewayHTTPRoute ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoute `json:"gatewayHTTPRoute,omitempty"`
-	// The ingress based HTTP01 challenge solver will solve challenges by
-	// creating or modifying Ingress resources in order to route requests for
-	// '/.well-known/acme-challenge/XYZ' to 'challenge solver' pods that are
-	// provisioned by cert-manager for each Challenge to be completed.
-	Ingress ClusterIssuerSpecAcmeSolversHttp01Ingress `json:"ingress,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoute represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoute struct {
-	// Custom labels that will be applied to HTTPRoutes created by cert-manager
-	// while solving HTTP-01 challenges.
+// Metadata represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.metadata
+type Metadata struct {
+	// Annotations that should be added to the created ACME HTTP01 solver pods.
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels that should be added to the created ACME HTTP01 solver pods.
 	Labels map[string]string `json:"labels,omitempty"`
-	// When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute.
-	// cert-manager needs to know which parentRefs should be used when creating
-	// the HTTPRoute. Usually, the parentRef references a Gateway. See:
-	// https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
-	ParentRefs []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRouteParentRefs `json:"parentRefs,omitempty"`
-	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges.
-	PodTemplate ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplate `json:"podTemplate,omitempty"`
-	// Optional service type for Kubernetes solver service. Supported values
-	// are NodePort or ClusterIP. If unset, defaults to NodePort.
-	ServiceType string `json:"serviceType,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRouteParentRefs represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.parentRefs
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRouteParentRefs struct {
+// NodeAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity
+type NodeAffinity struct {
+	// The scheduler will prefer to schedule pods to nodes that satisfy
+	// the affinity expressions specified by this field, but it may choose
+	// a node that violates one or more of the expressions. The node that is
+	// most preferred is the one with the greatest sum of weights, i.e.
+	// for each node that meets all of the scheduling requirements (resource
+	// request, requiredDuringScheduling affinity expressions, etc.),
+	// compute a sum by iterating through the elements of this field and adding
+	// "weight" to the sum if the node matches the corresponding matchExpressions; the
+	// node(s) with the highest sum are the most preferred.
+	PreferredDuringSchedulingIgnoredDuringExecution []PreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	// If the affinity requirements specified by this field are not met at
+	// scheduling time, the pod will not be scheduled onto the node.
+	// If the affinity requirements specified by this field cease to be met
+	// at some point during pod execution (e.g. due to an update), the system
+	// may or may not try to eventually evict the pod from its node.
+	RequiredDuringSchedulingIgnoredDuringExecution RequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+}
+
+// ParentRefs represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.parentRefs
+type ParentRefs struct {
 	// Group is the group of the referent.
 	// When unspecified, "gateway.networking.k8s.io" is inferred.
 	// To set the core API group (such as for a "Service" kind referent),
@@ -690,169 +720,8 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRouteParentRefs struct {
 	SectionName string `json:"sectionName,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplate represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplate struct {
-	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
-	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built values, the values here
-	// will override the in-built values.
-	Metadata ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateMetadata `json:"metadata,omitempty"`
-	// PodSpec defines overrides for the HTTP01 challenge solver pod.
-	// Check ACMEChallengeSolverHTTP01IngressPodSpec to find out currently supported fields.
-	// All other fields will be ignored.
-	Spec ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpec `json:"spec,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateMetadata represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.metadata
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateMetadata struct {
-	// Annotations that should be added to the created ACME HTTP01 solver pods.
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels that should be added to the created ACME HTTP01 solver pods.
-	Labels map[string]string `json:"labels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpec represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpec struct {
-	// If specified, the pod's scheduling constraints
-	Affinity ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinity `json:"affinity,omitempty"`
-	// If specified, the pod's imagePullSecrets
-	ImagePullSecrets []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecImagePullSecrets `json:"imagePullSecrets,omitempty"`
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// If specified, the pod's priorityClassName.
-	PriorityClassName string `json:"priorityClassName,omitempty"`
-	// If specified, the pod's security context
-	SecurityContext ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContext `json:"securityContext,omitempty"`
-	// If specified, the pod's service account
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// If specified, the pod's tolerations.
-	Tolerations []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecTolerations `json:"tolerations,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinity struct {
-	// Describes node affinity scheduling rules for the pod.
-	NodeAffinity ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinity `json:"nodeAffinity,omitempty"`
-	// Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
-	PodAffinity ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinity `json:"podAffinity,omitempty"`
-	// Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
-	PodAntiAffinity ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinity `json:"podAntiAffinity,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinity struct {
-	// The scheduler will prefer to schedule pods to nodes that satisfy
-	// the affinity expressions specified by this field, but it may choose
-	// a node that violates one or more of the expressions. The node that is
-	// most preferred is the one with the greatest sum of weights, i.e.
-	// for each node that meets all of the scheduling requirements (resource
-	// request, requiredDuringScheduling affinity expressions, etc.),
-	// compute a sum by iterating through the elements of this field and adding
-	// "weight" to the sum if the node matches the corresponding matchExpressions; the
-	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-	// If the affinity requirements specified by this field are not met at
-	// scheduling time, the pod will not be scheduled onto the node.
-	// If the affinity requirements specified by this field cease to be met
-	// at some point during pod execution (e.g. due to an update), the system
-	// may or may not try to eventually evict the pod from its node.
-	RequiredDuringSchedulingIgnoredDuringExecution ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// A node selector term, associated with the corresponding weight.
-	Preference ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference `json:"preference,omitempty"`
-	// Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
-	Weight int32 `json:"weight,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference struct {
-	// A list of node selector requirements by node's labels.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions `json:"matchExpressions,omitempty"`
-	// A list of node selector requirements by node's fields.
-	MatchFields []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields `json:"matchFields,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference.matchFields
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A list of node selector terms. The terms are ORed.
-	NodeSelectorTerms []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms `json:"nodeSelectorTerms,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms struct {
-	// A list of node selector requirements by node's labels.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions `json:"matchExpressions,omitempty"`
-	// A list of node selector requirements by node's fields.
-	MatchFields []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields `json:"matchFields,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms.matchFields
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinity struct {
+// PodAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity
+type PodAffinity struct {
 	// The scheduler will prefer to schedule pods to nodes that satisfy
 	// the affinity expressions specified by this field, but it may choose
 	// a node that violates one or more of the expressions. The node that is
@@ -862,7 +731,7 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	// compute a sum by iterating through the elements of this field and adding
 	// "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
 	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
 	// If the affinity requirements specified by this field are not met at
 	// scheduling time, the pod will not be scheduled onto the node.
 	// If the affinity requirements specified by this field cease to be met
@@ -870,23 +739,14 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	// system may or may not try to eventually evict the pod from its node.
 	// When there are multiple elements, the lists of nodes corresponding to each
 	// podAffinityTerm are intersected, i.e. all terms must be satisfied.
-	RequiredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	RequiredDuringSchedulingIgnoredDuringExecution []PodAffinityTerm `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A pod affinity term, associated with the corresponding weight.
-	PodAffinityTerm ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm `json:"podAffinityTerm,omitempty"`
-	// weight associated with matching the corresponding podAffinityTerm,
-	// in the range 1-100.
-	Weight int32 `json:"weight,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm struct {
+// PodAffinityTerm represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm
+type PodAffinityTerm struct {
 	// A label query over a set of resources, in this case pods.
 	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector `json:"labelSelector,omitempty"`
+	LabelSelector LabelSelector `json:"labelSelector,omitempty"`
 	// MatchLabelKeys is a set of pod label keys to select which pods will
 	// be taken into consideration. The keys are used to lookup values from the
 	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
@@ -912,7 +772,7 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	// and the ones listed in the namespaces field.
 	// null selector and null or empty namespaces list means "this pod's namespace".
 	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector `json:"namespaceSelector,omitempty"`
+	NamespaceSelector LabelSelector `json:"namespaceSelector,omitempty"`
 	// namespaces specifies a static list of namespace names that the term applies to.
 	// The term is applied to the union of the namespaces listed in this field
 	// and the ones selected by namespaceSelector.
@@ -926,148 +786,8 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	TopologyKey string `json:"topologyKey,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinity struct {
+// PodAntiAffinity represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity
+type PodAntiAffinity struct {
 	// The scheduler will prefer to schedule pods to nodes that satisfy
 	// the anti-affinity expressions specified by this field, but it may choose
 	// a node that violates one or more of the expressions. The node that is
@@ -1077,7 +797,7 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	// compute a sum by iterating through the elements of this field and adding
 	// "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
 	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
 	// If the anti-affinity requirements specified by this field are not met at
 	// scheduling time, the pod will not be scheduled onto the node.
 	// If the anti-affinity requirements specified by this field cease to be met
@@ -1085,214 +805,146 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPo
 	// system may or may not try to eventually evict the pod from its node.
 	// When there are multiple elements, the lists of nodes corresponding to each
 	// podAffinityTerm are intersected, i.e. all terms must be satisfied.
-	RequiredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
+	RequiredDuringSchedulingIgnoredDuringExecution []PodAffinityTerm `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A pod affinity term, associated with the corresponding weight.
-	PodAffinityTerm ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm `json:"podAffinityTerm,omitempty"`
-	// weight associated with matching the corresponding podAffinityTerm,
-	// in the range 1-100.
+// PodTemplate represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate
+type PodTemplate struct {
+	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
+	// Only the 'labels' and 'annotations' fields may be set.
+	// If labels or annotations overlap with in-built values, the values here
+	// will override the in-built values.
+	Metadata Metadata `json:"metadata,omitempty"`
+	// PodSpec defines overrides for the HTTP01 challenge solver pod.
+	// Check ACMEChallengeSolverHTTP01IngressPodSpec to find out currently supported fields.
+	// All other fields will be ignored.
+	Spec Spec `json:"spec,omitempty"`
+}
+
+// Preference represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference
+type Preference struct {
+	// A list of node selector requirements by node's labels.
+	MatchExpressions []MatchExpressions `json:"matchExpressions,omitempty"`
+	// A list of node selector requirements by node's fields.
+	MatchFields []MatchExpressions `json:"matchFields,omitempty"`
+}
+
+// PreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution
+type PreferredDuringSchedulingIgnoredDuringExecution struct {
+	// A node selector term, associated with the corresponding weight.
+	Preference Preference `json:"preference,omitempty"`
+	// Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
 	Weight int32 `json:"weight,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
+// RequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+type RequiredDuringSchedulingIgnoredDuringExecution struct {
+	// Required. A list of node selector terms. The terms are ORed.
+	NodeSelectorTerms []Preference `json:"nodeSelectorTerms,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+// Rfc2136 represents a ClusterIssuer.spec.acme.solvers.dns01.rfc2136
+type Rfc2136 struct {
+	// The IP address or hostname of an authoritative DNS server supporting
+	// RFC2136 in the form host:port. If the host is an IPv6 address it must be
+	// enclosed in square brackets (e.g [2001:db8::1]) ; port is optional.
+	// This field is required.
+	Nameserver string `json:"nameserver,omitempty"`
+	// The TSIG Algorithm configured in the DNS supporting RFC2136. Used only
+	// when ``tsigSecretSecretRef`` and ``tsigKeyName`` are defined.
+	// Supported values are (case-insensitive): ``HMACMD5`` (default),
+	// ``HMACSHA1``, ``HMACSHA256`` or ``HMACSHA512``.
+	TsigAlgorithm string `json:"tsigAlgorithm,omitempty"`
+	// The TSIG Key name configured in the DNS.
+	// If ``tsigSecretSecretRef`` is defined, this field is required.
+	TsigKeyName string `json:"tsigKeyName,omitempty"`
+	// The name of the secret containing the TSIG value.
+	// If ``tsigKeyName`` is defined, this field is required.
+	TsigSecretSecretRef PasswordSecretRef `json:"tsigSecretSecretRef,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
+// Route53 represents a ClusterIssuer.spec.acme.solvers.dns01.route53
+type Route53 struct {
+	// The AccessKeyID is used for authentication.
+	// Cannot be set when SecretAccessKeyID is set.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	AccessKeyID string `json:"accessKeyID,omitempty"`
+	// The SecretAccessKey is used for authentication. If set, pull the AWS
+	// access key ID from a key within a Kubernetes Secret.
+	// Cannot be set when AccessKeyID is set.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	AccessKeyIDSecretRef PasswordSecretRef `json:"accessKeyIDSecretRef,omitempty"`
+	// Auth configures how cert-manager authenticates.
+	Auth Auth `json:"auth,omitempty"`
+	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
+	HostedZoneID string `json:"hostedZoneID,omitempty"`
+	// Override the AWS region.
+	// 
+	// Route53 is a global service and does not have regional endpoints but the
+	// region specified here (or via environment variables) is used as a hint to
+	// help compute the correct AWS credential scope and partition when it
+	// connects to Route53. See:
+	// - [Amazon Route 53 endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/r53.html)
+	// - [Global services](https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/global-services.html)
+	// 
+	// If you omit this region field, cert-manager will use the region from
+	// AWS_REGION and AWS_DEFAULT_REGION environment variables, if they are set
+	// in the cert-manager controller Pod.
+	// 
+	// The `region` field is not needed if you use [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
+	// [Amazon EKS Pod Identity Webhook](https://github.com/aws/amazon-eks-pod-identity-webhook).
+	// In this case this `region` field value is ignored.
+	// 
+	// The `region` field is not needed if you use [EKS Pod Identities](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
+	// Instead an AWS_REGION environment variable is added to the cert-manager controller Pod by:
+	// [Amazon EKS Pod Identity Agent](https://github.com/aws/eks-pod-identity-agent),
+	// In this case this `region` field value is ignored.
+	Region string `json:"region,omitempty"`
+	// Role is a Role ARN which the Route53 provider will assume using either the explicit credentials AccessKeyID/SecretAccessKey
+	// or the inferred credentials from environment variables, shared credentials file or AWS Instance metadata
+	Role string `json:"role,omitempty"`
+	// The SecretAccessKey is used for authentication.
+	// If neither the Access Key nor Key ID are set, we fall-back to using env
+	// vars, shared credentials file or AWS Instance metadata,
+	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+	SecretAccessKeySecretRef PasswordSecretRef `json:"secretAccessKeySecretRef,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+// SeLinuxOptions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.seLinuxOptions
+type SeLinuxOptions struct {
+	// Level is SELinux level label that applies to the container.
+	Level string `json:"level,omitempty"`
+	// Role is a SELinux role label that applies to the container.
+	Role string `json:"role,omitempty"`
+	// Type is a SELinux type label that applies to the container.
+	Type string `json:"type,omitempty"`
+	// User is a SELinux user label that applies to the container.
+	User string `json:"user,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
+// SeccompProfile represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.seccompProfile
+type SeccompProfile struct {
+	// localhostProfile indicates a profile defined in a file on the node should be used.
+	// The profile must be preconfigured on the node to work.
+	// Must be a descending path, relative to the kubelet's configured seccomp profile location.
+	// Must be set if type is "Localhost". Must NOT be set for any other type.
+	LocalhostProfile string `json:"localhostProfile,omitempty"`
+	// type indicates which kind of seccomp profile will be applied.
+	// Valid options are:
+	// 
+	// Localhost - a profile defined in a file on the node should be used.
+	// RuntimeDefault - the container runtime default profile should be used.
+	// Unconfined - no profile should be applied.
+	Type string `json:"type,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecImagePullSecrets represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.imagePullSecrets
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecImagePullSecrets struct {
-	// Name of the referent.
-	// This field is effectively required, but due to backwards compatibility is
-	// allowed to be empty. Instances of this type with an empty value here are
-	// almost certainly wrong.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContext represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContext struct {
+// SecurityContext represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext
+type SecurityContext struct {
 	// A special supplemental group that applies to all containers in a pod.
 	// Some volume types allow the Kubelet to change the ownership of that volume
 	// to be owned by the pod:
@@ -1339,10 +991,10 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityCo
 	// both SecurityContext and PodSecurityContext, the value specified in SecurityContext
 	// takes precedence for that container.
 	// Note that this field cannot be set when spec.os.name is windows.
-	SeLinuxOptions ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeLinuxOptions `json:"seLinuxOptions,omitempty"`
+	SeLinuxOptions SeLinuxOptions `json:"seLinuxOptions,omitempty"`
 	// The seccomp options to use by the containers in this pod.
 	// Note that this field cannot be set when spec.os.name is windows.
-	SeccompProfile ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeccompProfile `json:"seccompProfile,omitempty"`
+	SeccompProfile SeccompProfile `json:"seccompProfile,omitempty"`
 	// A list of groups applied to the first process run in each container, in addition
 	// to the container's primary GID, the fsGroup (if specified), and group memberships
 	// defined in the container image for the uid of the container process. If unspecified,
@@ -1354,843 +1006,11 @@ type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityCo
 	// Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
 	// sysctls (by the container runtime) might fail to launch.
 	// Note that this field cannot be set when spec.os.name is windows.
-	Sysctls []ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSysctls `json:"sysctls,omitempty"`
+	Sysctls []Sysctls `json:"sysctls,omitempty"`
 }
 
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeLinuxOptions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.seLinuxOptions
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeLinuxOptions struct {
-	// Level is SELinux level label that applies to the container.
-	Level string `json:"level,omitempty"`
-	// Role is a SELinux role label that applies to the container.
-	Role string `json:"role,omitempty"`
-	// Type is a SELinux type label that applies to the container.
-	Type string `json:"type,omitempty"`
-	// User is a SELinux user label that applies to the container.
-	User string `json:"user,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeccompProfile represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.seccompProfile
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSeccompProfile struct {
-	// localhostProfile indicates a profile defined in a file on the node should be used.
-	// The profile must be preconfigured on the node to work.
-	// Must be a descending path, relative to the kubelet's configured seccomp profile location.
-	// Must be set if type is "Localhost". Must NOT be set for any other type.
-	LocalhostProfile string `json:"localhostProfile,omitempty"`
-	// type indicates which kind of seccomp profile will be applied.
-	// Valid options are:
-	// 
-	// Localhost - a profile defined in a file on the node should be used.
-	// RuntimeDefault - the container runtime default profile should be used.
-	// Unconfined - no profile should be applied.
-	Type string `json:"type,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSysctls represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.sysctls
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecSecurityContextSysctls struct {
-	// Name of a property to set
-	Name string `json:"name,omitempty"`
-	// Value of a property to set
-	Value string `json:"value,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecTolerations represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.tolerations
-type ClusterIssuerSpecAcmeSolversHttp01GatewayHTTPRoutePodTemplateSpecTolerations struct {
-	// Effect indicates the taint effect to match. Empty means match all taint effects.
-	// When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-	Effect string `json:"effect,omitempty"`
-	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
-	// If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-	Key string `json:"key,omitempty"`
-	// Operator represents a key's relationship to the value.
-	// Valid operators are Exists and Equal. Defaults to Equal.
-	// Exists is equivalent to wildcard for value, so that a pod can
-	// tolerate all taints of a particular category.
-	Operator string `json:"operator,omitempty"`
-	// TolerationSeconds represents the period of time the toleration (which must be
-	// of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-	// it is not set, which means tolerate the taint forever (do not evict). Zero and
-	// negative values will be treated as 0 (evict immediately) by the system.
-	TolerationSeconds int64 `json:"tolerationSeconds,omitempty"`
-	// Value is the taint value the toleration matches to.
-	// If the operator is Exists, the value should be empty, otherwise just a regular string.
-	Value string `json:"value,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01Ingress represents a ClusterIssuer.spec.acme.solvers.http01.ingress
-type ClusterIssuerSpecAcmeSolversHttp01Ingress struct {
-	// This field configures the annotation `kubernetes.io/ingress.class` when
-	// creating Ingress resources to solve ACME challenges that use this
-	// challenge solver. Only one of `class`, `name` or `ingressClassName` may
-	// be specified.
-	Class string `json:"class,omitempty"`
-	// This field configures the field `ingressClassName` on the created Ingress
-	// resources used to solve ACME challenges that use this challenge solver.
-	// This is the recommended way of configuring the ingress class. Only one of
-	// `class`, `name` or `ingressClassName` may be specified.
-	IngressClassName string `json:"ingressClassName,omitempty"`
-	// Optional ingress template used to configure the ACME challenge solver
-	// ingress used for HTTP01 challenges.
-	IngressTemplate ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplate `json:"ingressTemplate,omitempty"`
-	// The name of the ingress resource that should have ACME challenge solving
-	// routes inserted into it in order to solve HTTP01 challenges.
-	// This is typically used in conjunction with ingress controllers like
-	// ingress-gce, which maintains a 1:1 mapping between external IPs and
-	// ingress resources. Only one of `class`, `name` or `ingressClassName` may
-	// be specified.
-	Name string `json:"name,omitempty"`
-	// Optional pod template used to configure the ACME challenge solver pods
-	// used for HTTP01 challenges.
-	PodTemplate ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplate `json:"podTemplate,omitempty"`
-	// Optional service type for Kubernetes solver service. Supported values
-	// are NodePort or ClusterIP. If unset, defaults to NodePort.
-	ServiceType string `json:"serviceType,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplate represents a ClusterIssuer.spec.acme.solvers.http01.ingress.ingressTemplate
-type ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplate struct {
-	// ObjectMeta overrides for the ingress used to solve HTTP01 challenges.
-	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built values, the values here
-	// will override the in-built values.
-	Metadata ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplateMetadata `json:"metadata,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplateMetadata represents a ClusterIssuer.spec.acme.solvers.http01.ingress.ingressTemplate.metadata
-type ClusterIssuerSpecAcmeSolversHttp01IngressIngressTemplateMetadata struct {
-	// Annotations that should be added to the created ACME HTTP01 solver ingress.
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels that should be added to the created ACME HTTP01 solver ingress.
-	Labels map[string]string `json:"labels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplate represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplate struct {
-	// ObjectMeta overrides for the pod used to solve HTTP01 challenges.
-	// Only the 'labels' and 'annotations' fields may be set.
-	// If labels or annotations overlap with in-built values, the values here
-	// will override the in-built values.
-	Metadata ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateMetadata `json:"metadata,omitempty"`
-	// PodSpec defines overrides for the HTTP01 challenge solver pod.
-	// Check ACMEChallengeSolverHTTP01IngressPodSpec to find out currently supported fields.
-	// All other fields will be ignored.
-	Spec ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpec `json:"spec,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateMetadata represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.metadata
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateMetadata struct {
-	// Annotations that should be added to the created ACME HTTP01 solver pods.
-	Annotations map[string]string `json:"annotations,omitempty"`
-	// Labels that should be added to the created ACME HTTP01 solver pods.
-	Labels map[string]string `json:"labels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpec represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpec struct {
-	// If specified, the pod's scheduling constraints
-	Affinity ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinity `json:"affinity,omitempty"`
-	// If specified, the pod's imagePullSecrets
-	ImagePullSecrets []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecImagePullSecrets `json:"imagePullSecrets,omitempty"`
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// If specified, the pod's priorityClassName.
-	PriorityClassName string `json:"priorityClassName,omitempty"`
-	// If specified, the pod's security context
-	SecurityContext ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContext `json:"securityContext,omitempty"`
-	// If specified, the pod's service account
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// If specified, the pod's tolerations.
-	Tolerations []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecTolerations `json:"tolerations,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinity represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinity struct {
-	// Describes node affinity scheduling rules for the pod.
-	NodeAffinity ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinity `json:"nodeAffinity,omitempty"`
-	// Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
-	PodAffinity ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinity `json:"podAffinity,omitempty"`
-	// Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
-	PodAntiAffinity ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinity `json:"podAntiAffinity,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinity represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinity struct {
-	// The scheduler will prefer to schedule pods to nodes that satisfy
-	// the affinity expressions specified by this field, but it may choose
-	// a node that violates one or more of the expressions. The node that is
-	// most preferred is the one with the greatest sum of weights, i.e.
-	// for each node that meets all of the scheduling requirements (resource
-	// request, requiredDuringScheduling affinity expressions, etc.),
-	// compute a sum by iterating through the elements of this field and adding
-	// "weight" to the sum if the node matches the corresponding matchExpressions; the
-	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-	// If the affinity requirements specified by this field are not met at
-	// scheduling time, the pod will not be scheduled onto the node.
-	// If the affinity requirements specified by this field cease to be met
-	// at some point during pod execution (e.g. due to an update), the system
-	// may or may not try to eventually evict the pod from its node.
-	RequiredDuringSchedulingIgnoredDuringExecution ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// A node selector term, associated with the corresponding weight.
-	Preference ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference `json:"preference,omitempty"`
-	// Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
-	Weight int32 `json:"weight,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreference struct {
-	// A list of node selector requirements by node's labels.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions `json:"matchExpressions,omitempty"`
-	// A list of node selector requirements by node's fields.
-	MatchFields []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields `json:"matchFields,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchExpressions struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.preference.matchFields
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityPreferredDuringSchedulingIgnoredDuringExecutionPreferenceMatchFields struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A list of node selector terms. The terms are ORed.
-	NodeSelectorTerms []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms `json:"nodeSelectorTerms,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTerms struct {
-	// A list of node selector requirements by node's labels.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions `json:"matchExpressions,omitempty"`
-	// A list of node selector requirements by node's fields.
-	MatchFields []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields `json:"matchFields,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchExpressions struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms.matchFields
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityNodeAffinityRequiredDuringSchedulingIgnoredDuringExecutionNodeSelectorTermsMatchFields struct {
-	// The label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// Represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator string `json:"operator,omitempty"`
-	// An array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. If the operator is Gt or Lt, the values
-	// array must have a single element, which will be interpreted as an integer.
-	// This array is replaced during a strategic merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinity represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinity struct {
-	// The scheduler will prefer to schedule pods to nodes that satisfy
-	// the affinity expressions specified by this field, but it may choose
-	// a node that violates one or more of the expressions. The node that is
-	// most preferred is the one with the greatest sum of weights, i.e.
-	// for each node that meets all of the scheduling requirements (resource
-	// request, requiredDuringScheduling affinity expressions, etc.),
-	// compute a sum by iterating through the elements of this field and adding
-	// "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
-	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-	// If the affinity requirements specified by this field are not met at
-	// scheduling time, the pod will not be scheduled onto the node.
-	// If the affinity requirements specified by this field cease to be met
-	// at some point during pod execution (e.g. due to a pod label update), the
-	// system may or may not try to eventually evict the pod from its node.
-	// When there are multiple elements, the lists of nodes corresponding to each
-	// podAffinityTerm are intersected, i.e. all terms must be satisfied.
-	RequiredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A pod affinity term, associated with the corresponding weight.
-	PodAffinityTerm ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm `json:"podAffinityTerm,omitempty"`
-	// weight associated with matching the corresponding podAffinityTerm,
-	// in the range 1-100.
-	Weight int32 `json:"weight,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinity represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinity struct {
-	// The scheduler will prefer to schedule pods to nodes that satisfy
-	// the anti-affinity expressions specified by this field, but it may choose
-	// a node that violates one or more of the expressions. The node that is
-	// most preferred is the one with the greatest sum of weights, i.e.
-	// for each node that meets all of the scheduling requirements (resource
-	// request, requiredDuringScheduling anti-affinity expressions, etc.),
-	// compute a sum by iterating through the elements of this field and adding
-	// "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
-	// node(s) with the highest sum are the most preferred.
-	PreferredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-	// If the anti-affinity requirements specified by this field are not met at
-	// scheduling time, the pod will not be scheduled onto the node.
-	// If the anti-affinity requirements specified by this field cease to be met
-	// at some point during pod execution (e.g. due to a pod label update), the
-	// system may or may not try to eventually evict the pod from its node.
-	// When there are multiple elements, the lists of nodes corresponding to each
-	// podAffinityTerm are intersected, i.e. all terms must be satisfied.
-	RequiredDuringSchedulingIgnoredDuringExecution []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecution struct {
-	// Required. A pod affinity term, associated with the corresponding weight.
-	PodAffinityTerm ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm `json:"podAffinityTerm,omitempty"`
-	// weight associated with matching the corresponding podAffinityTerm,
-	// in the range 1-100.
-	Weight int32 `json:"weight,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTerm struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution.podAffinityTerm.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityPreferredDuringSchedulingIgnoredDuringExecutionPodAffinityTermNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecution struct {
-	// A label query over a set of resources, in this case pods.
-	// If it's null, this PodAffinityTerm matches with no Pods.
-	LabelSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector `json:"labelSelector,omitempty"`
-	// MatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-	// Also, matchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MatchLabelKeys []string `json:"matchLabelKeys,omitempty"`
-	// MismatchLabelKeys is a set of pod label keys to select which pods will
-	// be taken into consideration. The keys are used to lookup values from the
-	// incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-	// to select the group of existing pods which pods will be taken into consideration
-	// for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-	// pod labels will be ignored. The default value is empty.
-	// The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-	// Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-	// This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
-	MismatchLabelKeys []string `json:"mismatchLabelKeys,omitempty"`
-	// A label query over the set of namespaces that the term applies to.
-	// The term is applied to the union of the namespaces selected by this field
-	// and the ones listed in the namespaces field.
-	// null selector and null or empty namespaces list means "this pod's namespace".
-	// An empty selector ({}) matches all namespaces.
-	NamespaceSelector ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector `json:"namespaceSelector,omitempty"`
-	// namespaces specifies a static list of namespace names that the term applies to.
-	// The term is applied to the union of the namespaces listed in this field
-	// and the ones selected by namespaceSelector.
-	// null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-	Namespaces []string `json:"namespaces,omitempty"`
-	// This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-	// the labelSelector in the specified namespaces, where co-located is defined as running on a node
-	// whose value of the label with key topologyKey matches that of any node on which any of the
-	// selected pods is running.
-	// Empty topologyKey is not allowed.
-	TopologyKey string `json:"topologyKey,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.labelSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionLabelSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelector struct {
-	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions `json:"matchExpressions,omitempty"`
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.namespaceSelector.matchExpressions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecAffinityPodAntiAffinityRequiredDuringSchedulingIgnoredDuringExecutionNamespaceSelectorMatchExpressions struct {
-	// key is the label key that the selector applies to.
-	Key string `json:"key,omitempty"`
-	// operator represents a key's relationship to a set of values.
-	// Valid operators are In, NotIn, Exists and DoesNotExist.
-	Operator string `json:"operator,omitempty"`
-	// values is an array of string values. If the operator is In or NotIn,
-	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
-	// the values array must be empty. This array is replaced during a strategic
-	// merge patch.
-	Values []string `json:"values,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecImagePullSecrets represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.imagePullSecrets
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecImagePullSecrets struct {
-	// Name of the referent.
-	// This field is effectively required, but due to backwards compatibility is
-	// allowed to be empty. Instances of this type with an empty value here are
-	// almost certainly wrong.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContext represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.securityContext
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContext struct {
-	// A special supplemental group that applies to all containers in a pod.
-	// Some volume types allow the Kubelet to change the ownership of that volume
-	// to be owned by the pod:
-	// 
-	// 1. The owning GID will be the FSGroup
-	// 2. The setgid bit is set (new files created in the volume will be owned by FSGroup)
-	// 3. The permission bits are OR'd with rw-rw----
-	// 
-	// If unset, the Kubelet will not modify the ownership and permissions of any volume.
-	// Note that this field cannot be set when spec.os.name is windows.
-	FsGroup int64 `json:"fsGroup,omitempty"`
-	// fsGroupChangePolicy defines behavior of changing ownership and permission of the volume
-	// before being exposed inside Pod. This field will only apply to
-	// volume types which support fsGroup based ownership(and permissions).
-	// It will have no effect on ephemeral volume types such as: secret, configmaps
-	// and emptydir.
-	// Valid values are "OnRootMismatch" and "Always". If not specified, "Always" is used.
-	// Note that this field cannot be set when spec.os.name is windows.
-	FsGroupChangePolicy string `json:"fsGroupChangePolicy,omitempty"`
-	// The GID to run the entrypoint of the container process.
-	// Uses runtime default if unset.
-	// May also be set in SecurityContext.  If set in both SecurityContext and
-	// PodSecurityContext, the value specified in SecurityContext takes precedence
-	// for that container.
-	// Note that this field cannot be set when spec.os.name is windows.
-	RunAsGroup int64 `json:"runAsGroup,omitempty"`
-	// Indicates that the container must run as a non-root user.
-	// If true, the Kubelet will validate the image at runtime to ensure that it
-	// does not run as UID 0 (root) and fail to start the container if it does.
-	// If unset or false, no such validation will be performed.
-	// May also be set in SecurityContext.  If set in both SecurityContext and
-	// PodSecurityContext, the value specified in SecurityContext takes precedence.
-	RunAsNonRoot bool `json:"runAsNonRoot,omitempty"`
-	// The UID to run the entrypoint of the container process.
-	// Defaults to user specified in image metadata if unspecified.
-	// May also be set in SecurityContext.  If set in both SecurityContext and
-	// PodSecurityContext, the value specified in SecurityContext takes precedence
-	// for that container.
-	// Note that this field cannot be set when spec.os.name is windows.
-	RunAsUser int64 `json:"runAsUser,omitempty"`
-	// The SELinux context to be applied to all containers.
-	// If unspecified, the container runtime will allocate a random SELinux context for each
-	// container.  May also be set in SecurityContext.  If set in
-	// both SecurityContext and PodSecurityContext, the value specified in SecurityContext
-	// takes precedence for that container.
-	// Note that this field cannot be set when spec.os.name is windows.
-	SeLinuxOptions ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeLinuxOptions `json:"seLinuxOptions,omitempty"`
-	// The seccomp options to use by the containers in this pod.
-	// Note that this field cannot be set when spec.os.name is windows.
-	SeccompProfile ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeccompProfile `json:"seccompProfile,omitempty"`
-	// A list of groups applied to the first process run in each container, in addition
-	// to the container's primary GID, the fsGroup (if specified), and group memberships
-	// defined in the container image for the uid of the container process. If unspecified,
-	// no additional groups are added to any container. Note that group memberships
-	// defined in the container image for the uid of the container process are still effective,
-	// even if they are not included in this list.
-	// Note that this field cannot be set when spec.os.name is windows.
-	SupplementalGroups []int64 `json:"supplementalGroups,omitempty"`
-	// Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
-	// sysctls (by the container runtime) might fail to launch.
-	// Note that this field cannot be set when spec.os.name is windows.
-	Sysctls []ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSysctls `json:"sysctls,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeLinuxOptions represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.securityContext.seLinuxOptions
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeLinuxOptions struct {
-	// Level is SELinux level label that applies to the container.
-	Level string `json:"level,omitempty"`
-	// Role is a SELinux role label that applies to the container.
-	Role string `json:"role,omitempty"`
-	// Type is a SELinux type label that applies to the container.
-	Type string `json:"type,omitempty"`
-	// User is a SELinux user label that applies to the container.
-	User string `json:"user,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeccompProfile represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.securityContext.seccompProfile
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSeccompProfile struct {
-	// localhostProfile indicates a profile defined in a file on the node should be used.
-	// The profile must be preconfigured on the node to work.
-	// Must be a descending path, relative to the kubelet's configured seccomp profile location.
-	// Must be set if type is "Localhost". Must NOT be set for any other type.
-	LocalhostProfile string `json:"localhostProfile,omitempty"`
-	// type indicates which kind of seccomp profile will be applied.
-	// Valid options are:
-	// 
-	// Localhost - a profile defined in a file on the node should be used.
-	// RuntimeDefault - the container runtime default profile should be used.
-	// Unconfined - no profile should be applied.
-	Type string `json:"type,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSysctls represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.securityContext.sysctls
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecSecurityContextSysctls struct {
-	// Name of a property to set
-	Name string `json:"name,omitempty"`
-	// Value of a property to set
-	Value string `json:"value,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecTolerations represents a ClusterIssuer.spec.acme.solvers.http01.ingress.podTemplate.spec.tolerations
-type ClusterIssuerSpecAcmeSolversHttp01IngressPodTemplateSpecTolerations struct {
-	// Effect indicates the taint effect to match. Empty means match all taint effects.
-	// When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-	Effect string `json:"effect,omitempty"`
-	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
-	// If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-	Key string `json:"key,omitempty"`
-	// Operator represents a key's relationship to the value.
-	// Valid operators are Exists and Equal. Defaults to Equal.
-	// Exists is equivalent to wildcard for value, so that a pod can
-	// tolerate all taints of a particular category.
-	Operator string `json:"operator,omitempty"`
-	// TolerationSeconds represents the period of time the toleration (which must be
-	// of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-	// it is not set, which means tolerate the taint forever (do not evict). Zero and
-	// negative values will be treated as 0 (evict immediately) by the system.
-	TolerationSeconds int64 `json:"tolerationSeconds,omitempty"`
-	// Value is the taint value the toleration matches to.
-	// If the operator is Exists, the value should be empty, otherwise just a regular string.
-	Value string `json:"value,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeSolversSelector represents a ClusterIssuer.spec.acme.solvers.selector
-type ClusterIssuerSpecAcmeSolversSelector struct {
+// Selector represents a ClusterIssuer.spec.acme.solvers.selector
+type Selector struct {
 	// List of DNSNames that this solver will be used to solve.
 	// If specified and a match is found, a dnsNames selector will take
 	// precedence over a dnsZones selector.
@@ -2214,39 +1034,120 @@ type ClusterIssuerSpecAcmeSolversSelector struct {
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
-// ClusterIssuerSpecCa represents a ClusterIssuer.spec.ca
-type ClusterIssuerSpecCa struct {
-	// The CRL distribution points is an X.509 v3 certificate extension which identifies
-	// the location of the CRL from which the revocation of this certificate can be checked.
-	// If not set, certificates will be issued without distribution points set.
-	CrlDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
-	// IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates
-	// it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details.
-	// As an example, such a URL might be "http://ca.domain.com/ca.crt".
-	IssuingCertificateURLs []string `json:"issuingCertificateURLs,omitempty"`
-	// The OCSP server list is an X.509 v3 extension that defines a list of
-	// URLs of OCSP responders. The OCSP responders can be queried for the
-	// revocation status of an issued certificate. If not set, the
-	// certificate will be issued with no OCSP servers set. For example, an
-	// OCSP server URL could be "http://ocsp.int-x3.letsencrypt.org".
-	OcspServers []string `json:"ocspServers,omitempty"`
-	// SecretName is the name of the secret used to sign Certificates issued
-	// by this Issuer.
-	SecretName string `json:"secretName,omitempty"`
-}
-
-// ClusterIssuerSpecSelfSigned represents a ClusterIssuer.spec.selfSigned
-type ClusterIssuerSpecSelfSigned struct {
+// SelfSigned represents a ClusterIssuer.spec.selfSigned
+type SelfSigned struct {
 	// The CRL distribution points is an X.509 v3 certificate extension which identifies
 	// the location of the CRL from which the revocation of this certificate can be checked.
 	// If not set certificate will be issued without CDP. Values are strings.
 	CrlDistributionPoints []string `json:"crlDistributionPoints,omitempty"`
 }
 
-// ClusterIssuerSpecVault represents a ClusterIssuer.spec.vault
-type ClusterIssuerSpecVault struct {
+// ServiceAccountRef represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth.kubernetes.serviceAccountRef
+type ServiceAccountRef struct {
+	// TokenAudiences is an optional list of audiences to include in the
+	// token passed to AWS. The default token consisting of the issuer's namespace
+	// and name is always included.
+	// If unset the audience defaults to `sts.amazonaws.com`.
+	Audiences []string `json:"audiences,omitempty"`
+	// Name of the ServiceAccount used to request a token.
+	Name string `json:"name,omitempty"`
+}
+
+// Solvers represents a ClusterIssuer.spec.acme.solvers
+type Solvers struct {
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the DNS01 challenge flow.
+	Dns01 Dns01 `json:"dns01,omitempty"`
+	// Configures cert-manager to attempt to complete authorizations by
+	// performing the HTTP01 challenge flow.
+	// It is not possible to obtain certificates for wildcard domain names
+	// (e.g. `*.example.com`) using the HTTP01 challenge mechanism.
+	Http01 Http01 `json:"http01,omitempty"`
+	// Selector selects a set of DNSNames on the Certificate resource that
+	// should be solved using this challenge solver.
+	// If not specified, the solver will be treated as the 'default' solver
+	// with the lowest priority, i.e. if any other solver has a more specific
+	// match, it will be used instead.
+	Selector Selector `json:"selector,omitempty"`
+}
+
+// Spec represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec
+type Spec struct {
+	// If specified, the pod's scheduling constraints
+	Affinity Affinity `json:"affinity,omitempty"`
+	// If specified, the pod's imagePullSecrets
+	ImagePullSecrets []ImagePullSecrets `json:"imagePullSecrets,omitempty"`
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// If specified, the pod's priorityClassName.
+	PriorityClassName string `json:"priorityClassName,omitempty"`
+	// If specified, the pod's security context
+	SecurityContext SecurityContext `json:"securityContext,omitempty"`
+	// If specified, the pod's service account
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// If specified, the pod's tolerations.
+	Tolerations []Tolerations `json:"tolerations,omitempty"`
+}
+
+// Sysctls represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.sysctls
+type Sysctls struct {
+	// Name of a property to set
+	Name string `json:"name,omitempty"`
+	// Value of a property to set
+	Value string `json:"value,omitempty"`
+}
+
+// Tolerations represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.tolerations
+type Tolerations struct {
+	// Effect indicates the taint effect to match. Empty means match all taint effects.
+	// When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+	Effect string `json:"effect,omitempty"`
+	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
+	// If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+	Key string `json:"key,omitempty"`
+	// Operator represents a key's relationship to the value.
+	// Valid operators are Exists and Equal. Defaults to Equal.
+	// Exists is equivalent to wildcard for value, so that a pod can
+	// tolerate all taints of a particular category.
+	Operator string `json:"operator,omitempty"`
+	// TolerationSeconds represents the period of time the toleration (which must be
+	// of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+	// it is not set, which means tolerate the taint forever (do not evict). Zero and
+	// negative values will be treated as 0 (evict immediately) by the system.
+	TolerationSeconds int64 `json:"tolerationSeconds,omitempty"`
+	// Value is the taint value the toleration matches to.
+	// If the operator is Exists, the value should be empty, otherwise just a regular string.
+	Value string `json:"value,omitempty"`
+}
+
+// Tpp represents a ClusterIssuer.spec.venafi.tpp
+type Tpp struct {
+	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
+	// chain presented by the TPP server. Only used if using HTTPS; ignored for HTTP.
+	// If undefined, the certificate bundle in the cert-manager controller container
+	// is used to validate the chain.
+	CaBundle []byte `json:"caBundle,omitempty"`
+	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
+	// which will be used to validate the certificate chain presented by the TPP server.
+	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
+	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
+	// the cert-manager controller container is used to validate the TLS connection.
+	CaBundleSecretRef PasswordSecretRef `json:"caBundleSecretRef,omitempty"`
+	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
+	// The secret must contain the key 'access-token' for the Access Token Authentication,
+	// or two keys, 'username' and 'password' for the API Keys Authentication.
+	CredentialsRef CredentialsRef `json:"credentialsRef,omitempty"`
+	// URL is the base URL for the vedsdk endpoint of the Venafi TPP instance,
+	// for example: "https://tpp.example.com/vedsdk".
+	Url string `json:"url,omitempty"`
+}
+
+// Vault represents a ClusterIssuer.spec.vault
+type Vault struct {
 	// Auth configures how cert-manager authenticates with the Vault server.
-	Auth ClusterIssuerSpecVaultAuth `json:"auth,omitempty"`
+	Auth ClusterIssuerAuth `json:"auth,omitempty"`
 	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
 	// chain presented by Vault. Only used if using HTTPS to connect to Vault and
 	// ignored for HTTP connections.
@@ -2260,13 +1161,13 @@ type ClusterIssuerSpecVault struct {
 	// If neither CABundle nor CABundleSecretRef are defined, the certificate bundle in
 	// the cert-manager controller container is used to validate the TLS connection.
 	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
-	CaBundleSecretRef ClusterIssuerSpecVaultCaBundleSecretRef `json:"caBundleSecretRef,omitempty"`
+	CaBundleSecretRef PasswordSecretRef `json:"caBundleSecretRef,omitempty"`
 	// Reference to a Secret containing a PEM-encoded Client Certificate to use when the
 	// Vault server requires mTLS.
-	ClientCertSecretRef ClusterIssuerSpecVaultClientCertSecretRef `json:"clientCertSecretRef,omitempty"`
+	ClientCertSecretRef PasswordSecretRef `json:"clientCertSecretRef,omitempty"`
 	// Reference to a Secret containing a PEM-encoded Client Private Key to use when the
 	// Vault server requires mTLS.
-	ClientKeySecretRef ClusterIssuerSpecVaultClientKeySecretRef `json:"clientKeySecretRef,omitempty"`
+	ClientKeySecretRef PasswordSecretRef `json:"clientKeySecretRef,omitempty"`
 	// Name of the vault namespace. Namespaces is a set of features within Vault Enterprise that allows Vault environments to support Secure Multi-tenancy. e.g: "ns1"
 	// More about namespaces can be found here https://www.vaultproject.io/docs/enterprise/namespaces
 	Namespace string `json:"namespace,omitempty"`
@@ -2277,158 +1178,14 @@ type ClusterIssuerSpecVault struct {
 	Server string `json:"server,omitempty"`
 }
 
-// ClusterIssuerSpecVaultAuth represents a ClusterIssuer.spec.vault.auth
-type ClusterIssuerSpecVaultAuth struct {
-	// AppRole authenticates with Vault using the App Role auth mechanism,
-	// with the role and secret stored in a Kubernetes Secret resource.
-	AppRole ClusterIssuerSpecVaultAuthAppRole `json:"appRole,omitempty"`
-	// ClientCertificate authenticates with Vault by presenting a client
-	// certificate during the request's TLS handshake.
-	// Works only when using HTTPS protocol.
-	ClientCertificate ClusterIssuerSpecVaultAuthClientCertificate `json:"clientCertificate,omitempty"`
-	// Kubernetes authenticates with Vault by passing the ServiceAccount
-	// token stored in the named Secret resource to the Vault server.
-	Kubernetes ClusterIssuerSpecVaultAuthKubernetes `json:"kubernetes,omitempty"`
-	// TokenSecretRef authenticates with Vault by presenting a token.
-	TokenSecretRef ClusterIssuerSpecVaultAuthTokenSecretRef `json:"tokenSecretRef,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthAppRole represents a ClusterIssuer.spec.vault.auth.appRole
-type ClusterIssuerSpecVaultAuthAppRole struct {
-	// Path where the App Role authentication backend is mounted in Vault, e.g:
-	// "approle"
-	Path string `json:"path,omitempty"`
-	// RoleID configured in the App Role authentication backend when setting
-	// up the authentication backend in Vault.
-	RoleId string `json:"roleId,omitempty"`
-	// Reference to a key in a Secret that contains the App Role secret used
-	// to authenticate with Vault.
-	// The `key` field must be specified and denotes which entry within the Secret
-	// resource is used as the app role secret.
-	SecretRef ClusterIssuerSpecVaultAuthAppRoleSecretRef `json:"secretRef,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthAppRoleSecretRef represents a ClusterIssuer.spec.vault.auth.appRole.secretRef
-type ClusterIssuerSpecVaultAuthAppRoleSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthClientCertificate represents a ClusterIssuer.spec.vault.auth.clientCertificate
-type ClusterIssuerSpecVaultAuthClientCertificate struct {
-	// The Vault mountPath here is the mount path to use when authenticating with
-	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
-	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
-	// default value "/v1/auth/cert" will be used.
-	MountPath string `json:"mountPath,omitempty"`
-	// Name of the certificate role to authenticate against.
-	// If not set, matching any certificate role, if available.
-	Name string `json:"name,omitempty"`
-	// Reference to Kubernetes Secret of type "kubernetes.io/tls" (hence containing
-	// tls.crt and tls.key) used to authenticate to Vault using TLS client
-	// authentication.
-	SecretName string `json:"secretName,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthKubernetes represents a ClusterIssuer.spec.vault.auth.kubernetes
-type ClusterIssuerSpecVaultAuthKubernetes struct {
-	// The Vault mountPath here is the mount path to use when authenticating with
-	// Vault. For example, setting a value to `/v1/auth/foo`, will use the path
-	// `/v1/auth/foo/login` to authenticate with Vault. If unspecified, the
-	// default value "/v1/auth/kubernetes" will be used.
-	MountPath string `json:"mountPath,omitempty"`
-	// A required field containing the Vault Role to assume. A Role binds a
-	// Kubernetes ServiceAccount with a set of Vault policies.
-	Role string `json:"role,omitempty"`
-	// The required Secret field containing a Kubernetes ServiceAccount JWT used
-	// for authenticating with Vault. Use of 'ambient credentials' is not
-	// supported.
-	SecretRef ClusterIssuerSpecVaultAuthKubernetesSecretRef `json:"secretRef,omitempty"`
-	// A reference to a service account that will be used to request a bound
-	// token (also known as "projected token"). Compared to using "secretRef",
-	// using this field means that you don't rely on statically bound tokens. To
-	// use this field, you must configure an RBAC rule to let cert-manager
-	// request a token.
-	ServiceAccountRef ClusterIssuerSpecVaultAuthKubernetesServiceAccountRef `json:"serviceAccountRef,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthKubernetesSecretRef represents a ClusterIssuer.spec.vault.auth.kubernetes.secretRef
-type ClusterIssuerSpecVaultAuthKubernetesSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthKubernetesServiceAccountRef represents a ClusterIssuer.spec.vault.auth.kubernetes.serviceAccountRef
-type ClusterIssuerSpecVaultAuthKubernetesServiceAccountRef struct {
-	// TokenAudiences is an optional list of extra audiences to include in the token passed to Vault. The default token
-	// consisting of the issuer's namespace and name is always included.
-	Audiences []string `json:"audiences,omitempty"`
-	// Name of the ServiceAccount used to request a token.
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultAuthTokenSecretRef represents a ClusterIssuer.spec.vault.auth.tokenSecretRef
-type ClusterIssuerSpecVaultAuthTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultCaBundleSecretRef represents a ClusterIssuer.spec.vault.caBundleSecretRef
-type ClusterIssuerSpecVaultCaBundleSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultClientCertSecretRef represents a ClusterIssuer.spec.vault.clientCertSecretRef
-type ClusterIssuerSpecVaultClientCertSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVaultClientKeySecretRef represents a ClusterIssuer.spec.vault.clientKeySecretRef
-type ClusterIssuerSpecVaultClientKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVenafi represents a ClusterIssuer.spec.venafi
-type ClusterIssuerSpecVenafi struct {
+// Venafi represents a ClusterIssuer.spec.venafi
+type Venafi struct {
 	// Cloud specifies the Venafi cloud configuration settings.
 	// Only one of TPP or Cloud may be specified.
-	Cloud ClusterIssuerSpecVenafiCloud `json:"cloud,omitempty"`
+	Cloud Cloud `json:"cloud,omitempty"`
 	// TPP specifies Trust Protection Platform configuration settings.
 	// Only one of TPP or Cloud may be specified.
-	Tpp ClusterIssuerSpecVenafiTpp `json:"tpp,omitempty"`
+	Tpp Tpp `json:"tpp,omitempty"`
 	// Zone is the Venafi Policy Zone to use for this issuer.
 	// All requests made to the Venafi platform will be restricted by the named
 	// zone policy.
@@ -2436,160 +1193,61 @@ type ClusterIssuerSpecVenafi struct {
 	Zone string `json:"zone,omitempty"`
 }
 
-// ClusterIssuerSpecVenafiCloud represents a ClusterIssuer.spec.venafi.cloud
-type ClusterIssuerSpecVenafiCloud struct {
-	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
-	ApiTokenSecretRef ClusterIssuerSpecVenafiCloudApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
-	// URL is the base URL for Venafi Cloud.
-	// Defaults to "https://api.venafi.cloud/v1".
-	Url string `json:"url,omitempty"`
+// Webhook represents a ClusterIssuer.spec.acme.solvers.dns01.webhook
+type Webhook struct {
+	// Additional configuration that should be passed to the webhook apiserver
+	// when challenges are processed.
+	// This can contain arbitrary JSON data.
+	// Secret values should not be specified in this stanza.
+	// If secret values are needed (e.g. credentials for a DNS service), you
+	// should use a SecretKeySelector to reference a Secret resource.
+	// For details on the schema of this field, consult the webhook provider
+	// implementation's documentation.
+	Config *apiextensionsv1.JSON `json:"config,omitempty"`
+	// The API group name that should be used when POSTing ChallengePayload
+	// resources to the webhook apiserver.
+	// This should be the same as the GroupName specified in the webhook
+	// provider implementation.
+	GroupName string `json:"groupName,omitempty"`
+	// The name of the solver to use, as defined in the webhook provider
+	// implementation.
+	// This will typically be the name of the provider, e.g. 'cloudflare'.
+	SolverName string `json:"solverName,omitempty"`
 }
 
-// ClusterIssuerSpecVenafiCloudApiTokenSecretRef represents a ClusterIssuer.spec.venafi.cloud.apiTokenSecretRef
-type ClusterIssuerSpecVenafiCloudApiTokenSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVenafiTpp represents a ClusterIssuer.spec.venafi.tpp
-type ClusterIssuerSpecVenafiTpp struct {
-	// Base64-encoded bundle of PEM CAs which will be used to validate the certificate
-	// chain presented by the TPP server. Only used if using HTTPS; ignored for HTTP.
-	// If undefined, the certificate bundle in the cert-manager controller container
-	// is used to validate the chain.
-	CaBundle []byte `json:"caBundle,omitempty"`
-	// Reference to a Secret containing a base64-encoded bundle of PEM CAs
-	// which will be used to validate the certificate chain presented by the TPP server.
-	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
-	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
-	// the cert-manager controller container is used to validate the TLS connection.
-	CaBundleSecretRef ClusterIssuerSpecVenafiTppCaBundleSecretRef `json:"caBundleSecretRef,omitempty"`
-	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
-	// The secret must contain the key 'access-token' for the Access Token Authentication,
-	// or two keys, 'username' and 'password' for the API Keys Authentication.
-	CredentialsRef ClusterIssuerSpecVenafiTppCredentialsRef `json:"credentialsRef,omitempty"`
-	// URL is the base URL for the vedsdk endpoint of the Venafi TPP instance,
-	// for example: "https://tpp.example.com/vedsdk".
-	Url string `json:"url,omitempty"`
-}
-
-// ClusterIssuerSpecVenafiTppCaBundleSecretRef represents a ClusterIssuer.spec.venafi.tpp.caBundleSecretRef
-type ClusterIssuerSpecVenafiTppCaBundleSecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerSpecVenafiTppCredentialsRef represents a ClusterIssuer.spec.venafi.tpp.credentialsRef
-type ClusterIssuerSpecVenafiTppCredentialsRef struct {
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
-// ClusterIssuerStatus represents a ClusterIssuer.status
-type ClusterIssuerStatus struct {
-	// ACME specific status options.
-	// This field should only be set if the Issuer is configured to use an ACME
-	// server to issue certificates.
-	Acme ClusterIssuerStatusAcme `json:"acme,omitempty"`
-	// List of status conditions to indicate the status of a CertificateRequest.
-	// Known condition types are `Ready`.
-	Conditions []ClusterIssuerStatusConditions `json:"conditions,omitempty"`
-}
-
-// ClusterIssuerStatusAcme represents a ClusterIssuer.status.acme
-type ClusterIssuerStatusAcme struct {
-	// LastPrivateKeyHash is a hash of the private key associated with the latest
-	// registered ACME account, in order to track changes made to registered account
-	// associated with the Issuer
-	LastPrivateKeyHash string `json:"lastPrivateKeyHash,omitempty"`
-	// LastRegisteredEmail is the email associated with the latest registered
-	// ACME account, in order to track changes made to registered account
-	// associated with the  Issuer
-	LastRegisteredEmail string `json:"lastRegisteredEmail,omitempty"`
-	// URI is the unique account identifier, which can also be used to retrieve
-	// account details from the CA
-	Uri string `json:"uri,omitempty"`
-}
-
-// ClusterIssuerStatusConditions represents a ClusterIssuer.status.conditions
-type ClusterIssuerStatusConditions struct {
-	// LastTransitionTime is the timestamp corresponding to the last status
-	// change of this condition.
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
-	// Message is a human readable description of the details of the last
-	// transition, complementing reason.
-	Message string `json:"message,omitempty"`
-	// If set, this represents the .metadata.generation that the condition was
-	// set based upon.
-	// For instance, if .metadata.generation is currently 12, but the
-	// .status.condition[x].observedGeneration is 9, the condition is out of date
-	// with respect to the current state of the Issuer.
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-	// Reason is a brief machine readable explanation for the condition's last
-	// transition.
-	Reason string `json:"reason,omitempty"`
-	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status ClusterIssuerStatusConditionsStatus `json:"status,omitempty"`
-	// Type of the condition, known values are (`Ready`).
-	Type string `json:"type,omitempty"`
-}
-
-// ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm represents an enumeration for KeyAlgorithm
-type ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm string
+// Environment represents an enumeration for Environment
+type Environment string
 
 var (
-	// ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS256 KeyAlgorithm enum value "HS256"
-	ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS256 ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm = "HS256"
-	// ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS384 KeyAlgorithm enum value "HS384"
-	ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS384 ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm = "HS384"
-	// ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS512 KeyAlgorithm enum value "HS512"
-	ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithmHS512 ClusterIssuerSpecAcmeExternalAccountBindingKeyAlgorithm = "HS512"
+	// EnvironmentAzurePublicCloud Environment enum value "AzurePublicCloud"
+	EnvironmentAzurePublicCloud Environment = "AzurePublicCloud"
+	// EnvironmentAzureChinaCloud Environment enum value "AzureChinaCloud"
+	EnvironmentAzureChinaCloud Environment = "AzureChinaCloud"
+	// EnvironmentAzureGermanCloud Environment enum value "AzureGermanCloud"
+	EnvironmentAzureGermanCloud Environment = "AzureGermanCloud"
+	// EnvironmentAzureUSGovernmentCloud Environment enum value "AzureUSGovernmentCloud"
+	EnvironmentAzureUSGovernmentCloud Environment = "AzureUSGovernmentCloud"
 )
 
-// ClusterIssuerSpecAcmeSolversDns01CnameStrategy represents an enumeration for CnameStrategy
-type ClusterIssuerSpecAcmeSolversDns01CnameStrategy string
+// CnameStrategy represents an enumeration for CnameStrategy
+type CnameStrategy string
 
 var (
-	// ClusterIssuerSpecAcmeSolversDns01CnameStrategyNone CnameStrategy enum value "None"
-	ClusterIssuerSpecAcmeSolversDns01CnameStrategyNone ClusterIssuerSpecAcmeSolversDns01CnameStrategy = "None"
-	// ClusterIssuerSpecAcmeSolversDns01CnameStrategyFollow CnameStrategy enum value "Follow"
-	ClusterIssuerSpecAcmeSolversDns01CnameStrategyFollow ClusterIssuerSpecAcmeSolversDns01CnameStrategy = "Follow"
+	// CnameStrategyNone CnameStrategy enum value "None"
+	CnameStrategyNone CnameStrategy = "None"
+	// CnameStrategyFollow CnameStrategy enum value "Follow"
+	CnameStrategyFollow CnameStrategy = "Follow"
 )
 
-// ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment represents an enumeration for Environment
-type ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment string
+// KeyAlgorithm represents an enumeration for KeyAlgorithm
+type KeyAlgorithm string
 
 var (
-	// ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzurePublicCloud Environment enum value "AzurePublicCloud"
-	ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzurePublicCloud ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment = "AzurePublicCloud"
-	// ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureChinaCloud Environment enum value "AzureChinaCloud"
-	ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureChinaCloud ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment = "AzureChinaCloud"
-	// ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureGermanCloud Environment enum value "AzureGermanCloud"
-	ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureGermanCloud ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment = "AzureGermanCloud"
-	// ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureUSGovernmentCloud Environment enum value "AzureUSGovernmentCloud"
-	ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironmentAzureUSGovernmentCloud ClusterIssuerSpecAcmeSolversDns01AzureDNSEnvironment = "AzureUSGovernmentCloud"
-)
-
-// ClusterIssuerStatusConditionsStatus represents an enumeration for Status
-type ClusterIssuerStatusConditionsStatus string
-
-var (
-	// ClusterIssuerStatusConditionsStatusTrue Status enum value "True"
-	ClusterIssuerStatusConditionsStatusTrue ClusterIssuerStatusConditionsStatus = "True"
-	// ClusterIssuerStatusConditionsStatusFalse Status enum value "False"
-	ClusterIssuerStatusConditionsStatusFalse ClusterIssuerStatusConditionsStatus = "False"
-	// ClusterIssuerStatusConditionsStatusUnknown Status enum value "Unknown"
-	ClusterIssuerStatusConditionsStatusUnknown ClusterIssuerStatusConditionsStatus = "Unknown"
+	// KeyAlgorithmHS256 KeyAlgorithm enum value "HS256"
+	KeyAlgorithmHS256 KeyAlgorithm = "HS256"
+	// KeyAlgorithmHS384 KeyAlgorithm enum value "HS384"
+	KeyAlgorithmHS384 KeyAlgorithm = "HS384"
+	// KeyAlgorithmHS512 KeyAlgorithm enum value "HS512"
+	KeyAlgorithmHS512 KeyAlgorithm = "HS512"
 )
 

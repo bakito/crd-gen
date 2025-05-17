@@ -1,4 +1,4 @@
-package main
+package openapi
 
 // SchemaProperty represents a property in an OpenAPI schema.
 type SchemaProperty struct {
@@ -8,6 +8,27 @@ type SchemaProperty struct {
 	Properties  map[string]any `yaml:"properties,omitempty"`
 	Items       map[string]any `yaml:"items,omitempty"`
 	Ref         string         `yaml:"$ref,omitempty"`
+}
+
+type CustomResources struct {
+	Items   []*CustomResource
+	Names   []CRDNames
+	Group   string
+	Version string
+
+	structHashes map[string]string
+	structNames  map[string]bool
+}
+
+type CustomResource struct {
+	Kind    string
+	Root    *StructDef
+	Structs map[string]*StructDef
+	Imports map[string]bool
+	Plural  string
+	List    string
+	group   string
+	version string
 }
 
 // StructDef represents a Go struct definition.
