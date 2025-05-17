@@ -78,7 +78,7 @@ type ClusterIssuerAcme struct {
 	// Optionally, a `key` may be specified to select a specific entry within
 	// the named Secret resource.
 	// If `key` is not specified, a default of `tls.key` will be used.
-	PrivateKeySecretRef ClusterIssuerKeySecretRef `json:"privateKeySecretRef,omitempty"`
+	PrivateKeySecretRef CertificatePasswordSecretRef `json:"privateKeySecretRef,omitempty"`
 	// Server is the URL used to access the ACME server's 'directory' endpoint.
 	// For example, for Let's Encrypt's staging endpoint, you would use:
 	// "https://acme-staging-v02.api.letsencrypt.org/directory".
@@ -121,7 +121,7 @@ type ClusterIssuerAcme1 struct {
 type ClusterIssuerAcmeDNS struct {
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	AccountSecretRef ClusterIssuerKeySecretRef `json:"accountSecretRef,omitempty"`
+	AccountSecretRef CertificatePasswordSecretRef `json:"accountSecretRef,omitempty"`
 	
 	Host string `json:"host,omitempty"`
 }
@@ -140,13 +140,13 @@ type ClusterIssuerAffinity struct {
 type ClusterIssuerAkamai struct {
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	AccessTokenSecretRef ClusterIssuerKeySecretRef `json:"accessTokenSecretRef,omitempty"`
+	AccessTokenSecretRef CertificatePasswordSecretRef `json:"accessTokenSecretRef,omitempty"`
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	ClientSecretSecretRef ClusterIssuerKeySecretRef `json:"clientSecretSecretRef,omitempty"`
+	ClientSecretSecretRef CertificatePasswordSecretRef `json:"clientSecretSecretRef,omitempty"`
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	ClientTokenSecretRef ClusterIssuerKeySecretRef `json:"clientTokenSecretRef,omitempty"`
+	ClientTokenSecretRef CertificatePasswordSecretRef `json:"clientTokenSecretRef,omitempty"`
 	
 	ServiceConsumerDomain string `json:"serviceConsumerDomain,omitempty"`
 }
@@ -163,7 +163,7 @@ type ClusterIssuerAppRole struct {
 	// to authenticate with Vault.
 	// The `key` field must be specified and denotes which entry within the Secret
 	// resource is used as the app role secret.
-	SecretRef ClusterIssuerKeySecretRef `json:"secretRef,omitempty"`
+	SecretRef CertificatePasswordSecretRef `json:"secretRef,omitempty"`
 }
 
 // ClusterIssuerAuth represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth
@@ -186,7 +186,7 @@ type ClusterIssuerAuth1 struct {
 	// token stored in the named Secret resource to the Vault server.
 	Kubernetes ClusterIssuerKubernetes1 `json:"kubernetes,omitempty"`
 	// TokenSecretRef authenticates with Vault by presenting a token.
-	TokenSecretRef ClusterIssuerKeySecretRef `json:"tokenSecretRef,omitempty"`
+	TokenSecretRef CertificatePasswordSecretRef `json:"tokenSecretRef,omitempty"`
 }
 
 // ClusterIssuerAzureDNS represents a ClusterIssuer.spec.acme.solvers.dns01.azureDNS
@@ -198,7 +198,7 @@ type ClusterIssuerAzureDNS struct {
 	// Auth: Azure Service Principal:
 	// A reference to a Secret containing the password associated with the Service Principal.
 	// If set, ClientID and TenantID must also be set.
-	ClientSecretSecretRef ClusterIssuerKeySecretRef `json:"clientSecretSecretRef,omitempty"`
+	ClientSecretSecretRef CertificatePasswordSecretRef `json:"clientSecretSecretRef,omitempty"`
 	// name of the Azure environment (default AzurePublicCloud)
 	Environment ClusterIssuerEnvironment `json:"environment,omitempty"`
 	// name of the DNS zone that should be used
@@ -257,7 +257,7 @@ type ClusterIssuerClientCertificate struct {
 // ClusterIssuerCloud represents a ClusterIssuer.spec.venafi.cloud
 type ClusterIssuerCloud struct {
 	// APITokenSecretRef is a secret key selector for the Venafi Cloud API token.
-	ApiTokenSecretRef ClusterIssuerKeySecretRef `json:"apiTokenSecretRef,omitempty"`
+	ApiTokenSecretRef CertificatePasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
 	// URL is the base URL for Venafi Cloud.
 	// Defaults to "https://api.venafi.cloud/v1".
 	Url string `json:"url,omitempty"`
@@ -273,7 +273,7 @@ type ClusterIssuerCloudDNS struct {
 	Project string `json:"project,omitempty"`
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	ServiceAccountSecretRef ClusterIssuerKeySecretRef `json:"serviceAccountSecretRef,omitempty"`
+	ServiceAccountSecretRef CertificatePasswordSecretRef `json:"serviceAccountSecretRef,omitempty"`
 }
 
 // ClusterIssuerCloudflare represents a ClusterIssuer.spec.acme.solvers.dns01.cloudflare
@@ -281,9 +281,9 @@ type ClusterIssuerCloudflare struct {
 	// API key to use to authenticate with Cloudflare.
 	// Note: using an API token to authenticate is now the recommended method
 	// as it allows greater control of permissions.
-	ApiKeySecretRef ClusterIssuerKeySecretRef `json:"apiKeySecretRef,omitempty"`
+	ApiKeySecretRef CertificatePasswordSecretRef `json:"apiKeySecretRef,omitempty"`
 	// API token used to authenticate with Cloudflare.
-	ApiTokenSecretRef ClusterIssuerKeySecretRef `json:"apiTokenSecretRef,omitempty"`
+	ApiTokenSecretRef CertificatePasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
 	// Email of the account, only required when using API key based authentication.
 	Email string `json:"email,omitempty"`
 }
@@ -306,7 +306,7 @@ type ClusterIssuerConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status ClusterIssuerStatus1 `json:"status,omitempty"`
+	Status CertificateStatus1 `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`).
 	Type string `json:"type,omitempty"`
 }
@@ -322,7 +322,7 @@ type ClusterIssuerCredentialsRef struct {
 type ClusterIssuerDigitalocean struct {
 	// A reference to a specific 'key' within a Secret resource.
 	// In some instances, `key` is a required field.
-	TokenSecretRef ClusterIssuerKeySecretRef `json:"tokenSecretRef,omitempty"`
+	TokenSecretRef CertificatePasswordSecretRef `json:"tokenSecretRef,omitempty"`
 }
 
 // ClusterIssuerDns01 represents a ClusterIssuer.spec.acme.solvers.dns01
@@ -368,7 +368,7 @@ type ClusterIssuerExternalAccountBinding struct {
 	// the External Account Binding keyID above.
 	// The secret key stored in the Secret **must** be un-padded, base64 URL
 	// encoded data.
-	KeySecretRef ClusterIssuerKeySecretRef `json:"keySecretRef,omitempty"`
+	KeySecretRef CertificatePasswordSecretRef `json:"keySecretRef,omitempty"`
 }
 
 // ClusterIssuerGatewayHTTPRoute represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute
@@ -452,17 +452,6 @@ type ClusterIssuerIngressTemplate struct {
 	Metadata ClusterIssuerMetadata1 `json:"metadata,omitempty"`
 }
 
-// ClusterIssuerKeySecretRef represents a ClusterIssuer.spec.acme.externalAccountBinding.keySecretRef
-type ClusterIssuerKeySecretRef struct {
-	// The key of the entry in the Secret resource's `data` field to be used.
-	// Some instances of this field may be defaulted, in others it may be
-	// required.
-	Key string `json:"key,omitempty"`
-	// Name of the resource being referred to.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-	Name string `json:"name,omitempty"`
-}
-
 // ClusterIssuerKubernetes represents a ClusterIssuer.spec.acme.solvers.dns01.route53.auth.kubernetes
 type ClusterIssuerKubernetes struct {
 	// A reference to a service account that will be used to request a bound
@@ -484,7 +473,7 @@ type ClusterIssuerKubernetes1 struct {
 	// The required Secret field containing a Kubernetes ServiceAccount JWT used
 	// for authenticating with Vault. Use of 'ambient credentials' is not
 	// supported.
-	SecretRef ClusterIssuerKeySecretRef `json:"secretRef,omitempty"`
+	SecretRef CertificatePasswordSecretRef `json:"secretRef,omitempty"`
 	// A reference to a service account that will be used to request a bound
 	// token (also known as "projected token"). Compared to using "secretRef",
 	// using this field means that you don't rely on statically bound tokens. To
@@ -831,7 +820,7 @@ type ClusterIssuerRfc2136 struct {
 	TsigKeyName string `json:"tsigKeyName,omitempty"`
 	// The name of the secret containing the TSIG value.
 	// If ``tsigKeyName`` is defined, this field is required.
-	TsigSecretSecretRef ClusterIssuerKeySecretRef `json:"tsigSecretSecretRef,omitempty"`
+	TsigSecretSecretRef CertificatePasswordSecretRef `json:"tsigSecretSecretRef,omitempty"`
 }
 
 // ClusterIssuerRoute53 represents a ClusterIssuer.spec.acme.solvers.dns01.route53
@@ -848,7 +837,7 @@ type ClusterIssuerRoute53 struct {
 	// If neither the Access Key nor Key ID are set, we fall-back to using env
 	// vars, shared credentials file or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	AccessKeyIDSecretRef ClusterIssuerKeySecretRef `json:"accessKeyIDSecretRef,omitempty"`
+	AccessKeyIDSecretRef CertificatePasswordSecretRef `json:"accessKeyIDSecretRef,omitempty"`
 	// Auth configures how cert-manager authenticates.
 	Auth ClusterIssuerAuth `json:"auth,omitempty"`
 	// If set, the provider will manage only this zone in Route53 and will not do a lookup using the route53:ListHostedZonesByName api call.
@@ -883,7 +872,7 @@ type ClusterIssuerRoute53 struct {
 	// If neither the Access Key nor Key ID are set, we fall-back to using env
 	// vars, shared credentials file or AWS Instance metadata,
 	// see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
-	SecretAccessKeySecretRef ClusterIssuerKeySecretRef `json:"secretAccessKeySecretRef,omitempty"`
+	SecretAccessKeySecretRef CertificatePasswordSecretRef `json:"secretAccessKeySecretRef,omitempty"`
 }
 
 // ClusterIssuerSeLinuxOptions represents a ClusterIssuer.spec.acme.solvers.http01.gatewayHTTPRoute.podTemplate.spec.securityContext.seLinuxOptions
@@ -1145,7 +1134,7 @@ type ClusterIssuerTpp struct {
 	// Only used if using HTTPS; ignored for HTTP. Mutually exclusive with CABundle.
 	// If neither CABundle nor CABundleSecretRef is defined, the certificate bundle in
 	// the cert-manager controller container is used to validate the TLS connection.
-	CaBundleSecretRef ClusterIssuerKeySecretRef `json:"caBundleSecretRef,omitempty"`
+	CaBundleSecretRef CertificatePasswordSecretRef `json:"caBundleSecretRef,omitempty"`
 	// CredentialsRef is a reference to a Secret containing the Venafi TPP API credentials.
 	// The secret must contain the key 'access-token' for the Access Token Authentication,
 	// or two keys, 'username' and 'password' for the API Keys Authentication.
@@ -1172,13 +1161,13 @@ type ClusterIssuerVault struct {
 	// If neither CABundle nor CABundleSecretRef are defined, the certificate bundle in
 	// the cert-manager controller container is used to validate the TLS connection.
 	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
-	CaBundleSecretRef ClusterIssuerKeySecretRef `json:"caBundleSecretRef,omitempty"`
+	CaBundleSecretRef CertificatePasswordSecretRef `json:"caBundleSecretRef,omitempty"`
 	// Reference to a Secret containing a PEM-encoded Client Certificate to use when the
 	// Vault server requires mTLS.
-	ClientCertSecretRef ClusterIssuerKeySecretRef `json:"clientCertSecretRef,omitempty"`
+	ClientCertSecretRef CertificatePasswordSecretRef `json:"clientCertSecretRef,omitempty"`
 	// Reference to a Secret containing a PEM-encoded Client Private Key to use when the
 	// Vault server requires mTLS.
-	ClientKeySecretRef ClusterIssuerKeySecretRef `json:"clientKeySecretRef,omitempty"`
+	ClientKeySecretRef CertificatePasswordSecretRef `json:"clientKeySecretRef,omitempty"`
 	// Name of the vault namespace. Namespaces is a set of features within Vault Enterprise that allows Vault environments to support Secure Multi-tenancy. e.g: "ns1"
 	// More about namespaces can be found here https://www.vaultproject.io/docs/enterprise/namespaces
 	Namespace string `json:"namespace,omitempty"`
@@ -1238,18 +1227,6 @@ var (
 	ClusterIssuerEnvironmentAzureGermanCloud ClusterIssuerEnvironment = "AzureGermanCloud"
 	// ClusterIssuerEnvironmentAzureUSGovernmentCloud Environment enum value "AzureUSGovernmentCloud"
 	ClusterIssuerEnvironmentAzureUSGovernmentCloud ClusterIssuerEnvironment = "AzureUSGovernmentCloud"
-)
-
-// ClusterIssuerStatus1 represents an enumeration for Status
-type ClusterIssuerStatus1 string
-
-var (
-	// ClusterIssuerStatus1True Status enum value "True"
-	ClusterIssuerStatus1True ClusterIssuerStatus1 = "True"
-	// ClusterIssuerStatus1False Status enum value "False"
-	ClusterIssuerStatus1False ClusterIssuerStatus1 = "False"
-	// ClusterIssuerStatus1Unknown Status enum value "Unknown"
-	ClusterIssuerStatus1Unknown ClusterIssuerStatus1 = "Unknown"
 )
 
 // ClusterIssuerCnameStrategy represents an enumeration for CnameStrategy

@@ -15,6 +15,9 @@ type CustomResources struct {
 	Names   []CRDNames
 	Group   string
 	Version string
+
+	structHashes   map[string]string
+	structNamesCnt map[string]int
 }
 
 type CustomResource struct {
@@ -24,11 +27,8 @@ type CustomResource struct {
 	Imports map[string]bool
 	Plural  string
 	List    string
-	Group   string
-	Version string
-
-	structHashes   map[string]string
-	structNamesCnt map[string]int
+	group   string
+	version string
 }
 
 // StructDef represents a Go struct definition.

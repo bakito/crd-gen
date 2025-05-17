@@ -46,20 +46,10 @@ type CertificateRequestConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateRequestStatus1 `json:"status,omitempty"`
+	Status CertificateStatus1 `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
 	// `Approved`, `Denied`).
 	Type string `json:"type,omitempty"`
-}
-
-// CertificateRequestIssuerRef represents a CertificateRequest.spec.issuerRef
-type CertificateRequestIssuerRef struct {
-	// Group of the resource being referred to.
-	Group string `json:"group,omitempty"`
-	// Kind of the resource being referred to.
-	Kind string `json:"kind,omitempty"`
-	// Name of the resource being referred to.
-	Name string `json:"name,omitempty"`
 }
 
 // CertificateRequestSpec represents a CertificateRequest.spec
@@ -89,7 +79,7 @@ type CertificateRequestSpec struct {
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	IssuerRef CertificateRequestIssuerRef `json:"issuerRef,omitempty"`
+	IssuerRef CertificateIssuerRef `json:"issuerRef,omitempty"`
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	// 
@@ -111,7 +101,7 @@ type CertificateRequestSpec struct {
 	// as specified here without any additional values.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []CertificateRequestUsages `json:"usages,omitempty"`
+	Usages []CertificateUsages `json:"usages,omitempty"`
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
 	Username string `json:"username,omitempty"`
@@ -137,68 +127,4 @@ type CertificateRequestStatus struct {
 	// used to influence garbage collection and back-off.
 	FailureTime metav1.Time `json:"failureTime,omitempty"`
 }
-
-// CertificateRequestStatus1 represents an enumeration for Status
-type CertificateRequestStatus1 string
-
-var (
-	// CertificateRequestStatus1True Status enum value "True"
-	CertificateRequestStatus1True CertificateRequestStatus1 = "True"
-	// CertificateRequestStatus1False Status enum value "False"
-	CertificateRequestStatus1False CertificateRequestStatus1 = "False"
-	// CertificateRequestStatus1Unknown Status enum value "Unknown"
-	CertificateRequestStatus1Unknown CertificateRequestStatus1 = "Unknown"
-)
-
-// CertificateRequestUsages represents an enumeration for Usages
-type CertificateRequestUsages string
-
-var (
-	// CertificateRequestUsagesSigning Usages enum value "signing"
-	CertificateRequestUsagesSigning CertificateRequestUsages = "signing"
-	// CertificateRequestUsagesDigitalSignature Usages enum value "digital signature"
-	CertificateRequestUsagesDigitalSignature CertificateRequestUsages = "digital signature"
-	// CertificateRequestUsagesContentCommitment Usages enum value "content commitment"
-	CertificateRequestUsagesContentCommitment CertificateRequestUsages = "content commitment"
-	// CertificateRequestUsagesKeyEncipherment Usages enum value "key encipherment"
-	CertificateRequestUsagesKeyEncipherment CertificateRequestUsages = "key encipherment"
-	// CertificateRequestUsagesKeyAgreement Usages enum value "key agreement"
-	CertificateRequestUsagesKeyAgreement CertificateRequestUsages = "key agreement"
-	// CertificateRequestUsagesDataEncipherment Usages enum value "data encipherment"
-	CertificateRequestUsagesDataEncipherment CertificateRequestUsages = "data encipherment"
-	// CertificateRequestUsagesCertSign Usages enum value "cert sign"
-	CertificateRequestUsagesCertSign CertificateRequestUsages = "cert sign"
-	// CertificateRequestUsagesCrlSign Usages enum value "crl sign"
-	CertificateRequestUsagesCrlSign CertificateRequestUsages = "crl sign"
-	// CertificateRequestUsagesEncipherOnly Usages enum value "encipher only"
-	CertificateRequestUsagesEncipherOnly CertificateRequestUsages = "encipher only"
-	// CertificateRequestUsagesDecipherOnly Usages enum value "decipher only"
-	CertificateRequestUsagesDecipherOnly CertificateRequestUsages = "decipher only"
-	// CertificateRequestUsagesAny Usages enum value "any"
-	CertificateRequestUsagesAny CertificateRequestUsages = "any"
-	// CertificateRequestUsagesServerAuth Usages enum value "server auth"
-	CertificateRequestUsagesServerAuth CertificateRequestUsages = "server auth"
-	// CertificateRequestUsagesClientAuth Usages enum value "client auth"
-	CertificateRequestUsagesClientAuth CertificateRequestUsages = "client auth"
-	// CertificateRequestUsagesCodeSigning Usages enum value "code signing"
-	CertificateRequestUsagesCodeSigning CertificateRequestUsages = "code signing"
-	// CertificateRequestUsagesEmailProtection Usages enum value "email protection"
-	CertificateRequestUsagesEmailProtection CertificateRequestUsages = "email protection"
-	// CertificateRequestUsagesSMime Usages enum value "s/mime"
-	CertificateRequestUsagesSMime CertificateRequestUsages = "s/mime"
-	// CertificateRequestUsagesIpsecEndSystem Usages enum value "ipsec end system"
-	CertificateRequestUsagesIpsecEndSystem CertificateRequestUsages = "ipsec end system"
-	// CertificateRequestUsagesIpsecTunnel Usages enum value "ipsec tunnel"
-	CertificateRequestUsagesIpsecTunnel CertificateRequestUsages = "ipsec tunnel"
-	// CertificateRequestUsagesIpsecUser Usages enum value "ipsec user"
-	CertificateRequestUsagesIpsecUser CertificateRequestUsages = "ipsec user"
-	// CertificateRequestUsagesTimestamping Usages enum value "timestamping"
-	CertificateRequestUsagesTimestamping CertificateRequestUsages = "timestamping"
-	// CertificateRequestUsagesOcspSigning Usages enum value "ocsp signing"
-	CertificateRequestUsagesOcspSigning CertificateRequestUsages = "ocsp signing"
-	// CertificateRequestUsagesMicrosoftSgc Usages enum value "microsoft sgc"
-	CertificateRequestUsagesMicrosoftSgc CertificateRequestUsages = "microsoft sgc"
-	// CertificateRequestUsagesNetscapeSgc Usages enum value "netscape sgc"
-	CertificateRequestUsagesNetscapeSgc CertificateRequestUsages = "netscape sgc"
-)
 

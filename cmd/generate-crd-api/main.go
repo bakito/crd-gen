@@ -45,28 +45,28 @@ func main() {
 	defer println()
 
 	resources, success := openapi.Parse(crds, version)
-	if success {
+	if !success {
 		return
 	}
 
 	var files []outFile
 	for _, cr := range resources.Items {
 		// Generate types code
-		typesCode, err := generateTypesCode(cr)
+		typesCode, err := generateTypesCode(cr, resources.Group, resources.Version)
 		if err != nil {
 			slog.Error("Error generating types content", "error", err)
 			return
 		}
 
 		// Write output file
-		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(cr.Kind)))
+		outputFile := filepath.Join(target, resources.Version, fmt.Sprintf("types_%s.go", strings.ToLower(cr.Kind)))
 		files = append(files, outFile{
 			name:       outputFile,
 			content:    typesCode,
 			successMsg: "Successfully generated Go structs",
 			successArgs: []any{
-				"group", cr.Group,
-				"version", version,
+				"group", resources.Group,
+				"version", resources.Version,
 				"kind", cr.Kind,
 				"file", outputFile,
 			},
@@ -81,14 +81,14 @@ func main() {
 	}
 
 	// Write output file
-	outputFile := filepath.Join(target, version, "group_version_info.go")
+	outputFile := filepath.Join(target, resources.Version, "group_version_info.go")
 
 	files = append(files, outFile{
 		name:       outputFile,
 		content:    gvi,
 		successMsg: "Successfully generated GroupVersionInfo",
 		successArgs: []any{
-			"group", resources.Group, "version", version, "file", outputFile,
+			"group", resources.Group, "version", resources.Version, "file", outputFile,
 		},
 	})
 

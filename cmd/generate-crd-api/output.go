@@ -21,7 +21,7 @@ var (
 )
 
 // Generate Go code from struct definitions.
-func generateTypesCode(cr *openapi.CustomResource) (string, error) {
+func generateTypesCode(cr *openapi.CustomResource, group, version string) (string, error) {
 	// Sort and generate structs
 	sortedStructNames := slices.Sorted(maps.Keys(cr.Structs))
 
@@ -52,7 +52,7 @@ func generateTypesCode(cr *openapi.CustomResource) (string, error) {
 	err := t.Execute(&sb, map[string]any{
 		"AppName": myName,
 		"Version": version,
-		"Group":   cr.Group,
+		"Group":   group,
 		"Kind":    cr.Kind,
 		"List":    cr.List,
 		"Plural":  openapi.ToCamelCase(cr.Plural),

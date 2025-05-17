@@ -17,9 +17,12 @@ import (
 )
 
 func Parse(crds []string, version string) (res *CustomResources, success bool) {
-	res = &CustomResources{}
+	res = &CustomResources{
+		structHashes:   make(map[string]string),
+		structNamesCnt: make(map[string]int),
+		Version:        version,
+	}
 	var crdKind string
-	var crdVersion string
 
 	for i, crd := range crds {
 		// Read first crd file
@@ -29,39 +32,39 @@ func Parse(crds []string, version string) (res *CustomResources, success bool) {
 			return nil, false
 		}
 
-		cr, err := parseSingleCRD(data, crdVersion)
+		cr, err := res.parseSingleCRD(data, res.Version)
 		if err != nil {
 			slog.Error("Error parsing crd", "error", err)
 			return nil, false
 		}
 		res.Names = append(res.Names, CRDNames{Kind: cr.Kind, List: cr.List})
 
-		if i > 0 && res.Group != cr.Group {
+		if i > 0 && res.Group != cr.group {
 			slog.Error(
 				"Not all CRD have the same group",
 				"group-a", res.Group, "kind-a", crdKind,
-				"group-b", cr.Group, "kind-b", cr.Kind,
+				"group-b", cr.group, "kind-b", cr.Kind,
 			)
 			return nil, false
 		}
 
-		if version != "" && version != cr.Version {
+		if version != "" && version != cr.version {
 			slog.Error(
 				"Not all CRD have the same version",
 				"group-a", res.Group, "version-a", version, "kind-a", crdKind,
-				"group-b", cr.Group, "version-b", cr.Version, "kind-b", cr.Kind,
+				"group-b", cr.group, "version-b", cr.version, "kind-b", cr.Kind,
 			)
 			return nil, false
 		}
-		version = cr.Version
+		res.Version = cr.version
 		crdKind = cr.Kind
-		res.Group = cr.Group
+		res.Group = cr.group
 		res.Items = append(res.Items, cr)
 	}
 	return res, true
 }
 
-func parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {
+func (r *CustomResources) parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {
 	// Parse CRD YAML
 	var crd apiv1.CustomResourceDefinition
 	err := yaml.Unmarshal(crdData, &crd)
@@ -77,24 +80,22 @@ func parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, err
 	}
 
 	cr := &CustomResource{
-		Kind:           crd.Spec.Names.Kind,
-		Plural:         crd.Spec.Names.Plural,
-		List:           crd.Spec.Names.ListKind,
-		Group:          crd.Spec.Group,
-		Version:        version,
-		Structs:        make(map[string]*StructDef),
-		Imports:        map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
-		structHashes:   make(map[string]string),
-		structNamesCnt: make(map[string]int),
+		Kind:    crd.Spec.Names.Kind,
+		Plural:  crd.Spec.Names.Plural,
+		List:    crd.Spec.Names.ListKind,
+		group:   crd.Spec.Group,
+		version: version,
+		Structs: make(map[string]*StructDef),
+		Imports: map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
 	}
 
 	// Generate structs
-	generateStructs(schema, cr, cr.Kind, cr.Kind, true)
+	r.generateStructs(schema, cr, cr.Kind, cr.Kind, true)
 	return cr, nil
 }
 
 // Process schema and generate structs.
-func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, path string, root bool) {
+func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, path string, root bool) {
 	structDef := &StructDef{
 		Root:        root,
 		Name:        name,
@@ -120,21 +121,21 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				if len(prop.Properties) > 0 {
 					hash := getHash(prop.Properties)
 
-					if ft, ok := cr.structHashes[hash]; ok {
+					if ft, ok := r.structHashes[hash]; ok {
 						fieldType = ft
 					} else {
 						kindFieldName := cr.Kind + fieldName
 						var trueFieldName string
-						if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+						if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
 							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-							cr.structNamesCnt[kindFieldName] = cnt + 1
+							r.structNamesCnt[kindFieldName] = cnt + 1
 						} else {
 							trueFieldName = kindFieldName
-							cr.structNamesCnt[kindFieldName] = 1
+							r.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = trueFieldName
-						cr.structHashes[hash] = trueFieldName
-						generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
+						r.structHashes[hash] = trueFieldName
+						r.generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
 					}
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
@@ -148,21 +149,21 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
 					hash := getHash(prop.Items.Schema.Properties)
 
-					if ft, ok := cr.structHashes[hash]; ok {
+					if ft, ok := r.structHashes[hash]; ok {
 						fieldType = "[]" + ft
 					} else {
 						kindFieldName := cr.Kind + fieldName
 						var trueFieldName string
-						if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+						if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
 							trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-							cr.structNamesCnt[kindFieldName] = cnt + 1
+							r.structNamesCnt[kindFieldName] = cnt + 1
 						} else {
 							trueFieldName = kindFieldName
-							cr.structNamesCnt[kindFieldName] = 1
+							r.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = "[]" + trueFieldName
-						cr.structHashes[hash] = trueFieldName
-						generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
+						r.structHashes[hash] = trueFieldName
+						r.generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
 					}
 				}
 			default:
@@ -186,44 +187,44 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
 			hash := getHash(prop.Items.Schema.Enum)
 
-			if ft, ok := cr.structHashes[hash]; ok {
+			if ft, ok := r.structHashes[hash]; ok {
 				fieldType = "[]" + ft
 			} else {
 				kindFieldName := cr.Kind + fieldName
 				var trueFieldName string
-				if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+				if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
 					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-					cr.structNamesCnt[kindFieldName] = cnt + 1
+					r.structNamesCnt[kindFieldName] = cnt + 1
 				} else {
 					trueFieldName = kindFieldName
-					cr.structNamesCnt[kindFieldName] = 1
+					r.structNamesCnt[kindFieldName] = 1
 				}
 
 				field.Enums = generateEnum(prop.Items.Schema, trueFieldName)
 				field.EnumType = prop.Items.Schema.Type
 				fieldType = "[]" + trueFieldName
 				field.EnumName = trueFieldName
-				cr.structHashes[hash] = trueFieldName
+				r.structHashes[hash] = trueFieldName
 			}
 		} else if len(prop.Enum) > 0 {
 			hash := getHash(prop.Enum)
-			if ft, ok := cr.structHashes[hash]; ok {
+			if ft, ok := r.structHashes[hash]; ok {
 				fieldType = ft
 			} else {
 				kindFieldName := cr.Kind + fieldName
 				var trueFieldName string
-				if cnt, ok := cr.structNamesCnt[kindFieldName]; ok {
+				if cnt, ok := r.structNamesCnt[kindFieldName]; ok {
 					trueFieldName = fmt.Sprintf("%s%d", kindFieldName, cnt)
-					cr.structNamesCnt[kindFieldName] = cnt + 1
+					r.structNamesCnt[kindFieldName] = cnt + 1
 				} else {
 					trueFieldName = kindFieldName
-					cr.structNamesCnt[kindFieldName] = 1
+					r.structNamesCnt[kindFieldName] = 1
 				}
 				field.Enums = generateEnum(&prop, trueFieldName)
 				field.EnumType = prop.Type
 				field.EnumName = trueFieldName
 				fieldType = trueFieldName
-				cr.structHashes[hash] = trueFieldName
+				r.structHashes[hash] = trueFieldName
 			}
 		}
 
