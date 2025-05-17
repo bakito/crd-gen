@@ -10,6 +10,13 @@ type SchemaProperty struct {
 	Ref         string         `yaml:"$ref,omitempty"`
 }
 
+type CustomResources struct {
+	Items   []*CustomResource
+	Names   []CRDNames
+	Group   string
+	Version string
+}
+
 type CustomResource struct {
 	Kind    string
 	Root    *StructDef

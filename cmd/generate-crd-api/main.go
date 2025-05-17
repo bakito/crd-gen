@@ -44,48 +44,13 @@ func main() {
 	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
 	defer println()
 
-	var crdGroup string
-	var crdKind string
-	var crdVersion string
-	var names []openapi.CRDNames
+	resources, success := openapi.Parse(crds, version)
+	if success {
+		return
+	}
 
 	var files []outFile
-	for i, crd := range crds {
-		// Read first crd file
-		data, err := os.ReadFile(crd)
-		if err != nil {
-			slog.Error("Error reading file", "error", err)
-			return
-		}
-
-		cr, err := openapi.Parse(data, crdVersion)
-		if err != nil {
-			slog.Error("Error parsing crd", "error", err)
-			return
-		}
-		names = append(names, openapi.CRDNames{Kind: cr.Kind, List: cr.List})
-
-		if i > 0 && crdGroup != cr.Group {
-			slog.Error(
-				"Not all CRD have the same group",
-				"group-a", crdGroup, "kind-a", crdKind,
-				"group-b", cr.Group, "kind-b", cr.Kind,
-			)
-			return
-		}
-
-		if version != "" && version != cr.Version {
-			slog.Error(
-				"Not all CRD have the same version",
-				"group-a", crdGroup, "version-a", version, "kind-a", crdKind,
-				"group-b", cr.Group, "version-b", cr.Version, "kind-b", cr.Kind,
-			)
-			return
-		}
-		version = cr.Version
-		crdKind = cr.Kind
-		crdGroup = cr.Group
-
+	for _, cr := range resources.Items {
 		// Generate types code
 		typesCode, err := generateTypesCode(cr)
 		if err != nil {
@@ -94,22 +59,22 @@ func main() {
 		}
 
 		// Write output file
-		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))
+		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(cr.Kind)))
 		files = append(files, outFile{
 			name:       outputFile,
 			content:    typesCode,
 			successMsg: "Successfully generated Go structs",
 			successArgs: []any{
-				"group", crdGroup,
+				"group", cr.Group,
 				"version", version,
-				"kind", crdKind,
+				"kind", cr.Kind,
 				"file", outputFile,
 			},
 		})
 	}
 
 	// Generate GroupVersionInfo code
-	gvi, err := generateGroupVersionInfoCode(crdGroup, version, names)
+	gvi, err := generateGroupVersionInfoCode(resources)
 	if err != nil {
 		slog.Error("Error writing group_version_kind.go", "error", err)
 		return
@@ -123,7 +88,7 @@ func main() {
 		content:    gvi,
 		successMsg: "Successfully generated GroupVersionInfo",
 		successArgs: []any{
-			"group", crdGroup, "version", version, "file", outputFile,
+			"group", resources.Group, "version", version, "file", outputFile,
 		},
 	})
 

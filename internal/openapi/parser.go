@@ -4,7 +4,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 	"unicode"
@@ -14,7 +16,52 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func Parse(crdData []byte, desiredVersion string) (*CustomResource, error) {
+func Parse(crds []string, version string) (res *CustomResources, success bool) {
+	res = &CustomResources{}
+	var crdKind string
+	var crdVersion string
+
+	for i, crd := range crds {
+		// Read first crd file
+		data, err := os.ReadFile(crd)
+		if err != nil {
+			slog.Error("Error reading file", "error", err)
+			return nil, false
+		}
+
+		cr, err := parseSingleCRD(data, crdVersion)
+		if err != nil {
+			slog.Error("Error parsing crd", "error", err)
+			return nil, false
+		}
+		res.Names = append(res.Names, CRDNames{Kind: cr.Kind, List: cr.List})
+
+		if i > 0 && res.Group != cr.Group {
+			slog.Error(
+				"Not all CRD have the same group",
+				"group-a", res.Group, "kind-a", crdKind,
+				"group-b", cr.Group, "kind-b", cr.Kind,
+			)
+			return nil, false
+		}
+
+		if version != "" && version != cr.Version {
+			slog.Error(
+				"Not all CRD have the same version",
+				"group-a", res.Group, "version-a", version, "kind-a", crdKind,
+				"group-b", cr.Group, "version-b", cr.Version, "kind-b", cr.Kind,
+			)
+			return nil, false
+		}
+		version = cr.Version
+		crdKind = cr.Kind
+		res.Group = cr.Group
+		res.Items = append(res.Items, cr)
+	}
+	return res, true
+}
+
+func parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {
 	// Parse CRD YAML
 	var crd apiv1.CustomResourceDefinition
 	err := yaml.Unmarshal(crdData, &crd)

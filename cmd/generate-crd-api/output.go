@@ -75,14 +75,14 @@ func prepare(structDef *openapi.StructDef) {
 	}
 }
 
-func generateGroupVersionInfoCode(group, version string, names []openapi.CRDNames) (string, error) {
+func generateGroupVersionInfoCode(res *openapi.CustomResources) (string, error) {
 	var sb strings.Builder
 	t := template.Must(template.New("group_version_into.go.tpl").Parse(gviTpl))
 	if err := t.Execute(&sb, map[string]any{
 		"AppName":  myName,
-		"Version":  version,
-		"Group":    group,
-		"CRDNames": names,
+		"Version":  res.Version,
+		"Group":    res.Group,
+		"CRDNames": res.Names,
 	}); err != nil {
 		return "", err
 	}
