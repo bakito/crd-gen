@@ -77,15 +77,15 @@ func parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, err
 	}
 
 	cr := &CustomResource{
-		Kind:             crd.Spec.Names.Kind,
-		Plural:           crd.Spec.Names.Plural,
-		List:             crd.Spec.Names.ListKind,
-		Group:            crd.Spec.Group,
-		Version:          version,
-		Structs:          make(map[string]*StructDef),
-		Imports:          map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
-		structSignatures: make(map[string]string),
-		structNamesCnt:   make(map[string]int),
+		Kind:           crd.Spec.Names.Kind,
+		Plural:         crd.Spec.Names.Plural,
+		List:           crd.Spec.Names.ListKind,
+		Group:          crd.Spec.Group,
+		Version:        version,
+		Structs:        make(map[string]*StructDef),
+		Imports:        map[string]bool{`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`: true},
+		structHashes:   make(map[string]string),
+		structNamesCnt: make(map[string]int),
 	}
 
 	// Generate structs
@@ -118,9 +118,9 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 			switch prop.Type {
 			case "object":
 				if len(prop.Properties) > 0 {
-					signature := sign(prop.Properties)
+					hash := getHash(prop.Properties)
 
-					if ft, ok := cr.structSignatures[signature]; ok {
+					if ft, ok := cr.structHashes[hash]; ok {
 						fieldType = ft
 					} else {
 						kindFieldName := cr.Kind + fieldName
@@ -133,7 +133,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 							cr.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = trueFieldName
-						cr.structSignatures[signature] = trueFieldName
+						cr.structHashes[hash] = trueFieldName
 						generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
 					}
 				} else {
@@ -146,9 +146,9 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				}
 			case "array":
 				if prop.Items != nil && prop.Items.Schema != nil && prop.Items.Schema.Type == "object" {
-					signature := sign(prop.Items.Schema.Properties)
+					hash := getHash(prop.Items.Schema.Properties)
 
-					if ft, ok := cr.structSignatures[signature]; ok {
+					if ft, ok := cr.structHashes[hash]; ok {
 						fieldType = "[]" + ft
 					} else {
 						kindFieldName := cr.Kind + fieldName
@@ -161,7 +161,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 							cr.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = "[]" + trueFieldName
-						cr.structSignatures[signature] = trueFieldName
+						cr.structHashes[hash] = trueFieldName
 						generateStructs(prop.Items.Schema, cr, trueFieldName, path+"."+propName, false)
 					}
 				}
@@ -184,9 +184,9 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
-			signature := sign(prop.Items.Schema.Enum)
+			hash := getHash(prop.Items.Schema.Enum)
 
-			if ft, ok := cr.structSignatures[signature]; ok {
+			if ft, ok := cr.structHashes[hash]; ok {
 				fieldType = "[]" + ft
 			} else {
 				kindFieldName := cr.Kind + fieldName
@@ -203,11 +203,11 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				field.EnumType = prop.Items.Schema.Type
 				fieldType = "[]" + trueFieldName
 				field.EnumName = trueFieldName
-				cr.structSignatures[signature] = trueFieldName
+				cr.structHashes[hash] = trueFieldName
 			}
 		} else if len(prop.Enum) > 0 {
-			signature := sign(prop.Enum)
-			if ft, ok := cr.structSignatures[signature]; ok {
+			hash := getHash(prop.Enum)
+			if ft, ok := cr.structHashes[hash]; ok {
 				fieldType = ft
 			} else {
 				kindFieldName := cr.Kind + fieldName
@@ -223,7 +223,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 				field.EnumType = prop.Type
 				field.EnumName = trueFieldName
 				fieldType = trueFieldName
-				cr.structSignatures[signature] = trueFieldName
+				cr.structHashes[hash] = trueFieldName
 			}
 		}
 
@@ -332,7 +332,7 @@ func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDe
 	return enums
 }
 
-func sign(y any) string {
+func getHash(y any) string {
 	b, _ := json.Marshal(y)
 	hash := md5.Sum(b)
 	return hex.EncodeToString(hash[:])
