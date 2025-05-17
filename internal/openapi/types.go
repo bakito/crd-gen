@@ -16,8 +16,8 @@ type CustomResources struct {
 	Group   string
 	Version string
 
-	structHashes   map[string]string
-	structNamesCnt map[string]int
+	structHashes map[string]string
+	structNames  map[string]bool
 }
 
 type CustomResource struct {

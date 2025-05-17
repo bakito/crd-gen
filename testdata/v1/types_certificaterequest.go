@@ -46,7 +46,7 @@ type CertificateRequestConditions struct {
 	// transition.
 	Reason string `json:"reason,omitempty"`
 	// Status of the condition, one of (`True`, `False`, `Unknown`).
-	Status CertificateStatus1 `json:"status,omitempty"`
+	Status Status `json:"status,omitempty"`
 	// Type of the condition, known values are (`Ready`, `InvalidRequest`,
 	// `Approved`, `Denied`).
 	Type string `json:"type,omitempty"`
@@ -79,7 +79,7 @@ type CertificateRequestSpec struct {
 	// from any namespace.
 	// 
 	// The `name` field of the reference must always be specified.
-	IssuerRef CertificateIssuerRef `json:"issuerRef,omitempty"`
+	IssuerRef IssuerRef `json:"issuerRef,omitempty"`
 	// The PEM-encoded X.509 certificate signing request to be submitted to the
 	// issuer for signing.
 	// 
@@ -101,7 +101,7 @@ type CertificateRequestSpec struct {
 	// as specified here without any additional values.
 	// 
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	Usages []CertificateUsages `json:"usages,omitempty"`
+	Usages []Usages `json:"usages,omitempty"`
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
 	Username string `json:"username,omitempty"`
