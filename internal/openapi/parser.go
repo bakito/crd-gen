@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -57,7 +59,8 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 		cr.Structs[name] = structDef
 	}
 
-	for propName, prop := range schema.Properties {
+	for _, propName := range slices.Sorted(maps.Keys(schema.Properties)) {
+		prop := schema.Properties[propName]
 		fieldName := ToCamelCase(propName)
 		var fieldType string
 
@@ -83,7 +86,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 							cr.structNamesCnt[kindFieldName] = 1
 						}
 						fieldType = trueFieldName
-						cr.structSignatures[signature] = fieldType
+						cr.structSignatures[signature] = trueFieldName
 						generateStructs(&prop, cr, trueFieldName, path+"."+propName, false)
 					}
 				} else {
@@ -137,7 +140,7 @@ func generateStructs(schema *apiv1.JSONSchemaProps, cr *CustomResource, name, pa
 			signature := sign(prop.Items.Schema.Enum)
 
 			if ft, ok := cr.structSignatures[signature]; ok {
-				fieldType = ft
+				fieldType = "[]" + ft
 			} else {
 				kindFieldName := cr.Kind + fieldName
 				var trueFieldName string
