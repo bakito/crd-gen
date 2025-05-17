@@ -21,7 +21,7 @@ var (
 )
 
 // Generate Go code from struct definitions.
-func generateTypesCode(cr *openapi.CustomResource) string {
+func generateTypesCode(cr *openapi.CustomResource) (string, error) {
 	// Sort and generate structs
 	sortedStructNames := slices.Sorted(maps.Keys(cr.Structs))
 
@@ -49,7 +49,7 @@ func generateTypesCode(cr *openapi.CustomResource) string {
 
 	var sb strings.Builder
 	t := template.Must(template.New("types.go.tpl").Parse(typeTpl))
-	if err := t.Execute(&sb, map[string]any{
+	err := t.Execute(&sb, map[string]any{
 		"AppName": myName,
 		"Version": version,
 		"Group":   cr.Group,
@@ -59,10 +59,8 @@ func generateTypesCode(cr *openapi.CustomResource) string {
 		"Root":    cr.Root,
 		"Structs": structs,
 		"Imports": importList,
-	}); err != nil {
-		println(err)
-	}
-	return sb.String()
+	})
+	return sb.String(), err
 }
 
 func prepare(structDef *openapi.StructDef) {

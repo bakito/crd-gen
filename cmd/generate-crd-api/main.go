@@ -87,7 +87,11 @@ func main() {
 		crdGroup = cr.Group
 
 		// Generate types code
-		typesCode := generateTypesCode(cr)
+		typesCode, err := generateTypesCode(cr)
+		if err != nil {
+			slog.Error("Error generating types content", "error", err)
+			return
+		}
 
 		// Write output file
 		outputFile := filepath.Join(target, version, fmt.Sprintf("types_%s.go", strings.ToLower(crdKind)))
