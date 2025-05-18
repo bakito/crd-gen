@@ -3,10 +3,12 @@ module github.com/bakito/crd-gen
 go 1.24.2
 
 require (
+	github.com/crossplane/crossplane-runtime v1.19.0
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/stretchr/testify v1.10.0
 	k8s.io/apiextensions-apiserver v0.33.1
 	k8s.io/apimachinery v0.33.1
+	sigs.k8s.io/controller-runtime v0.20.4
 )
 
 require (
