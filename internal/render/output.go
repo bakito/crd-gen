@@ -1,8 +1,12 @@
-package main
+package render
 
 import (
 	_ "embed"
+	"fmt"
+	"log/slog"
 	"maps"
+	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -19,6 +23,76 @@ var (
 	//go:embed types.go.tpl
 	typeTpl string
 )
+
+func WriteCrdFiles(resources *openapi.CustomResources, targetDir string) error {
+	var files []outFile
+	for _, cr := range resources.Items {
+		// Generate types code
+		typesCode, err := generateTypesCode(cr, resources.Group, resources.Version)
+		if err != nil {
+			return fmt.Errorf("error generating types content: %w", err)
+		}
+
+		// Write output file
+		outputFile := filepath.Join(targetDir, resources.Version, fmt.Sprintf("types_%s.go", strings.ToLower(cr.Kind)))
+		files = append(files, outFile{
+			name:       outputFile,
+			content:    typesCode,
+			successMsg: "Successfully generated Go structs",
+			successArgs: []any{
+				"group", resources.Group,
+				"version", resources.Version,
+				"kind", cr.Kind,
+				"file", outputFile,
+			},
+		})
+	}
+
+	// Generate GroupVersionInfo code
+	gvi, err := generateGroupVersionInfoCode(resources)
+	if err != nil {
+		return fmt.Errorf("error writing group_version_kind.go: %w", err)
+	}
+
+	// Write output file
+	outputFile := filepath.Join(targetDir, resources.Version, "group_version_info.go")
+
+	files = append(files, outFile{
+		name:       outputFile,
+		content:    gvi,
+		successMsg: "Successfully generated GroupVersionInfo",
+		successArgs: []any{
+			"group", resources.Group, "version", resources.Version, "file", outputFile,
+		},
+	})
+
+	return writeFiles(files)
+}
+
+func writeFiles(files []outFile) error {
+	for _, f := range files {
+		dir := filepath.Dir(f.name)
+
+		// Create the directory if it doesn't exist
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return fmt.Errorf("error creating directory: %w", err)
+		}
+
+		if err := os.WriteFile(f.name, []byte(f.content), 0o644); err != nil {
+			return fmt.Errorf("error writing output file: %w", err)
+		}
+
+		slog.With(f.successArgs...).Info(f.successMsg)
+	}
+	return nil
+}
+
+type outFile struct {
+	name        string
+	content     string
+	successMsg  string
+	successArgs []any
+}
 
 // Generate Go code from struct definitions.
 func generateTypesCode(cr *openapi.CustomResource, group, version string) (string, error) {
@@ -73,6 +147,14 @@ func prepare(structDef *openapi.StructDef) {
 	for i, f := range structDef.Fields {
 		structDef.Fields[i].Description = prepareDescription(f.Description, true)
 	}
+}
+
+func prepareDescription(desc string, field bool) string {
+	indent := "// "
+	if field {
+		indent = "\t" + indent
+	}
+	return strings.ReplaceAll(desc, "\n", "\n"+indent)
 }
 
 func generateGroupVersionInfoCode(res *openapi.CustomResources) (string, error) {
