@@ -1,14 +1,15 @@
 package main
 
 import (
-	"flag"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/bakito/crd-gen/internal/flags"
+	"github.com/spf13/cobra"
+
 	"github.com/bakito/crd-gen/internal/openapi"
 )
 
@@ -21,24 +22,34 @@ func prepareDescription(desc string, field bool) string {
 }
 
 var (
-	crds    flags.ArrayFlags
+	crds    []string
 	target  string
 	version string
+
+	rootCmd = &cobra.Command{
+		Use:   "generate-crd-api",
+		Short: "Generate Go API code from CRD files",
+		RunE:  run,
+	}
 )
 
-func main() {
-	flag.Var(&crds, "crd", "CRD file to process")
-	flag.StringVar(&target, "target", "", "The target directory to copyFile the files to")
-	flag.StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
-	flag.Parse()
+func init() {
+	rootCmd.Flags().StringSliceVar(&crds, "crd", nil, "CRD file to process")
+	rootCmd.Flags().StringVar(&target, "target", "", "The target directory to copyFile the files to")
+	rootCmd.Flags().
+		StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
+	_ = rootCmd.MarkFlagRequired("target")
+}
 
-	if strings.TrimSpace(target) == "" {
-		slog.Error("Flag must be defined", "flag", "target")
-		return
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
+}
+
+func run(cmd *cobra.Command, args []string) error {
 	if len(crds) == 0 {
-		slog.Error("At lease on CRD must be defined", "flag", "target")
-		return
+		return errors.New("at least one CRD must be defined")
 	}
 
 	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
@@ -46,7 +57,7 @@ func main() {
 
 	resources, success := openapi.Parse(crds, version)
 	if !success {
-		return
+		return errors.New("failed to parse CRDs")
 	}
 
 	var files []outFile
@@ -54,8 +65,7 @@ func main() {
 		// Generate types code
 		typesCode, err := generateTypesCode(cr, resources.Group, resources.Version)
 		if err != nil {
-			slog.Error("Error generating types content", "error", err)
-			return
+			return fmt.Errorf("error generating types content: %w", err)
 		}
 
 		// Write output file
@@ -76,8 +86,7 @@ func main() {
 	// Generate GroupVersionInfo code
 	gvi, err := generateGroupVersionInfoCode(resources)
 	if err != nil {
-		slog.Error("Error writing group_version_kind.go", "error", err)
-		return
+		return fmt.Errorf("error writing group_version_kind.go: %w", err)
 	}
 
 	// Write output file
@@ -92,26 +101,25 @@ func main() {
 		},
 	})
 
-	writeFiles(files)
+	return writeFiles(files)
 }
 
-func writeFiles(files []outFile) {
+func writeFiles(files []outFile) error {
 	for _, f := range files {
 		dir := filepath.Dir(f.name)
 
 		// Create the directory if it doesn't exist
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			slog.Error("Error creating directory", "error", err)
-			return
+			return fmt.Errorf("error creating directory: %w", err)
 		}
 
 		if err := os.WriteFile(f.name, []byte(f.content), 0o644); err != nil {
-			slog.Error("Error writing output file", "error", err)
-			return
+			return fmt.Errorf("error writing output file: %w", err)
 		}
 
 		slog.With(f.successArgs...).Info(f.successMsg)
 	}
+	return nil
 }
 
 type outFile struct {

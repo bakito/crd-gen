@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -12,12 +12,11 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-
-	"github.com/bakito/crd-gen/internal/flags"
+	"github.com/spf13/cobra"
 )
 
 var (
-	excludeFlags flags.ArrayFlags
+	excludeFlags []string
 	module       string
 	path         string
 	target       string
@@ -25,41 +24,44 @@ var (
 	useGit       = false
 )
 
-func main() {
-	flag.Var(&excludeFlags, "exclude", "Regex pattern for file excludes")
-	flag.StringVar(&module, "module", "", "The go module to get the api files from")
-	flag.StringVar(&path, "path", "", "The path within the module to the api files")
-	flag.StringVar(&target, "target", "", "The target directory to copyFile the files to")
-	flag.BoolVar(&clearTarget, "clear", false, "Clear target dir")
-	flag.BoolVar(&useGit, "use-git", false, "Use git instead of go mod (of module is not proper versioned)")
-	flag.Parse()
+var rootCmd = &cobra.Command{
+	Use:   "extract-crd-api",
+	Short: "Extract CRD API files from a Go module",
+	RunE:  run,
+}
 
-	if strings.TrimSpace(module) == "" {
-		slog.Error("Flag must be defined", "flag", "module")
-		return
+func init() {
+	rootCmd.Flags().StringSliceVarP(&excludeFlags, "exclude", "e", nil, "Regex pattern for file excludes")
+	rootCmd.Flags().StringVarP(&module, "module", "m", "", "The go module to get the api files from")
+	rootCmd.Flags().StringVarP(&path, "path", "p", "", "The path within the module to the api files")
+	rootCmd.Flags().StringVarP(&target, "target", "t", "", "The target directory to copyFile the files to")
+	rootCmd.Flags().BoolVarP(&clearTarget, "clear", "c", false, "Clear target dir")
+	rootCmd.Flags().BoolVarP(&useGit, "use-git", "g", false, "Use git instead of go mod (of module is not proper versioned)")
+
+	_ = rootCmd.MarkFlagRequired("module")
+	_ = rootCmd.MarkFlagRequired("path")
+	_ = rootCmd.MarkFlagRequired("target")
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
-	if strings.TrimSpace(path) == "" {
-		slog.Error("Flag must be defined", "flag", "path")
-		return
-	}
-	if strings.TrimSpace(target) == "" {
-		slog.Error("Flag must be defined", "flag", "target")
-		return
+}
+
+func run(cmd *cobra.Command, args []string) error {
+	var excludes []*regexp.Regexp
+	for _, excludeFlag := range excludeFlags {
+		excludes = append(excludes, regexp.MustCompile(excludeFlag))
 	}
 
 	slog.With("target", target, "path", path, "module", module,
 		"exclude", excludeFlags, "clear", clearTarget, "use-git", useGit).Info("generate-crd-api")
 	defer println()
 
-	var excludes []*regexp.Regexp
-	for _, excludeFlag := range excludeFlags {
-		excludes = append(excludes, regexp.MustCompile(excludeFlag))
-	}
-
 	tmp, err := os.MkdirTemp("", "extract-crd-api")
 	if err != nil {
-		slog.Error("Failed to create a temp dir", "error", err)
-		return
+		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 	moduleRoot := tmp
@@ -75,21 +77,18 @@ func main() {
 		})
 		slog.Debug("Git clone output", "output", out.String())
 		if err != nil {
-			slog.Error("Failed to clone module", "error", err)
-			return
+			return fmt.Errorf("failed to clone module: %w", err)
 		}
 		w, err := r.Worktree()
 		if err != nil {
-			slog.Error("Failed to clone module", "error", err)
-			return
+			return fmt.Errorf("failed to get worktree: %w", err)
 		}
 		if len(info) > 0 {
 			err = w.Checkout(&git.CheckoutOptions{
 				Branch: plumbing.NewTagReferenceName(info[1]),
 			})
 			if err != nil {
-				slog.With("tag", info[1]).Error("Failed to checkout tag", "error", err)
-				return
+				return fmt.Errorf("failed to checkout tag %s: %w", info[1], err)
 			}
 		}
 	} else {
@@ -105,9 +104,8 @@ func main() {
 		err = cmd.Run()
 		slog.Debug("go mod download output", "output", execOut.String())
 		if err != nil {
-			slog.Error("Failed to download module", "error", err, "stdout",
-				execOut.String(), "stderr", execErr.String())
-			return
+			return fmt.Errorf("failed to download module: %w\nstdout: %s\nstderr: %s",
+				err, execOut.String(), execErr.String())
 		}
 
 		execOut = bytes.Buffer{}
@@ -118,9 +116,8 @@ func main() {
 		cmd.Stderr = &execErr
 		err = cmd.Run()
 		if err != nil {
-			slog.Error("Failed to download module", "error", err, "stdout",
-				execOut.String(), "stderr", execErr.String())
-			return
+			return fmt.Errorf("failed to set permissions: %w\nstdout: %s\nstderr: %s",
+				err, execOut.String(), execErr.String())
 		}
 		moduleRoot = filepath.Join(tmp, module)
 	}
@@ -129,8 +126,7 @@ func main() {
 	apiPath := filepath.Join(moduleRoot, path)
 	entries, err := os.ReadDir(filepath.Join(moduleRoot, path))
 	if err != nil {
-		slog.With("path", apiPath).Error("Failed to read files in api path", "error", err)
-		return
+		return fmt.Errorf("failed to read api path %s: %w", apiPath, err)
 	}
 
 	if clearTarget {
@@ -138,19 +134,18 @@ func main() {
 	}
 	err = os.MkdirAll(target, 0o755)
 	if err != nil {
-		slog.With("path", apiPath).Error("Failed to create api path dir", "error", err)
-		return
+		return fmt.Errorf("failed to create target dir %s: %w", target, err)
 	}
 
 	for _, e := range entries {
 		if keep(e.Name(), excludes) {
 			err = copyFile(filepath.Join(apiPath, e.Name()), filepath.Join(target, e.Name()))
 			if err != nil {
-				slog.With("path", apiPath, "file", e.Name()).Error("FFailed to copyFile from api path", "error", err)
-				return
+				return fmt.Errorf("failed to copy file %s: %w", e.Name(), err)
 			}
 		}
 	}
+	return nil
 }
 
 func keep(name string, excludes []*regexp.Regexp) bool {
