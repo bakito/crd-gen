@@ -67,8 +67,9 @@ func Parse(crds []string, version string, pointerVars bool) (res *CustomResource
 		for i, item := range res.Items {
 			for s, def := range item.Structs {
 				for f, field := range def.Fields {
-					if strings.HasPrefix(field.Type, "[]") {
-						res.Items[i].Structs[s].Fields[f].Type = strings.Replace(field.Type, "[]", "[]*", 1)
+					if strings.Contains(field.Type, "]") {
+						// handle slice and maps
+						res.Items[i].Structs[s].Fields[f].Type = strings.Replace(field.Type, "]", "]*", 1)
 					} else {
 						res.Items[i].Structs[s].Fields[f].Type = "*" + field.Type
 					}
