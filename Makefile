@@ -25,7 +25,7 @@ generate-ci:
 	  --exclude .*\.conversion_hubs.go \
 	  --exclude .*\.resolvers.go
 	go run ./cmd/generate-crd-api \
-	  --target tmp/apis \
+	  --target tmp/apis --pointer \
 	  --crd testdata/certificates.cert-manager.io.yaml
 	go tool controller-gen object paths=./tmp/apis/v1
 

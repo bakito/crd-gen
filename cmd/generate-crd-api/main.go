@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	crds    []string
-	target  string
-	version string
+	crds     []string
+	target   string
+	version  string
+	pointers bool
 
 	rootCmd = &cobra.Command{
 		Use:   "generate-crd-api",
@@ -26,6 +27,7 @@ var (
 func init() {
 	rootCmd.Flags().StringSliceVar(&crds, "crd", nil, "CRD file to process")
 	rootCmd.Flags().StringVar(&target, "target", "", "The target directory to copyFile the files to")
+	rootCmd.Flags().BoolVar(&pointers, "pointer", false, "If enabled, struct variables are generated as pointers")
 	rootCmd.Flags().
 		StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
 	_ = rootCmd.MarkFlagRequired("target")
@@ -45,7 +47,7 @@ func run(_ *cobra.Command, _ []string) error {
 	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
 	defer println()
 
-	resources, success := openapi.Parse(crds, version)
+	resources, success := openapi.Parse(crds, version, pointers)
 	if !success {
 		return errors.New("failed to parse CRDs")
 	}

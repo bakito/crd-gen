@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func Parse(crds []string, version string) (res *CustomResources, success bool) {
+func Parse(crds []string, version string, pointerVars bool) (res *CustomResources, success bool) {
 	res = &CustomResources{
 		structHashes: make(map[string]string),
 		structNames:  make(map[string]bool),
@@ -61,6 +61,22 @@ func Parse(crds []string, version string) (res *CustomResources, success bool) {
 		res.Group = cr.group
 		res.Items = append(res.Items, cr)
 	}
+
+	if pointerVars {
+		// convert fields to pointers - there is room for improvement here, but it works for now
+		for i, item := range res.Items {
+			for s, def := range item.Structs {
+				for f, field := range def.Fields {
+					if strings.HasPrefix(field.Type, "[]") {
+						res.Items[i].Structs[s].Fields[f].Type = strings.Replace(field.Type, "[]", "[]*", 1)
+					} else {
+						res.Items[i].Structs[s].Fields[f].Type = "*" + field.Type
+					}
+				}
+			}
+		}
+	}
+
 	return res, true
 }
 
