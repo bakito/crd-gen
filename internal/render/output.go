@@ -15,7 +15,7 @@ import (
 	"github.com/bakito/crd-gen/internal/openapi"
 )
 
-const myName = "opanapi-generator"
+const myName = "crd-gen"
 
 var (
 	//go:embed group_version_into.go.tpl
