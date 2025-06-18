@@ -192,7 +192,7 @@ func (r *CustomResources) generateEnumStruct(
 	} else {
 		uniqFieldName := r.newUniqFieldName(cr, fieldName, false, path)
 		field.Enums = generateEnum(prop, uniqFieldName)
-		field.EnumType = prop.Type
+		field.EnumType = mapType(*prop)
 		field.EnumName = uniqFieldName
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
