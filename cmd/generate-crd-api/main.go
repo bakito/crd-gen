@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -45,7 +46,7 @@ func run(_ *cobra.Command, _ []string) error {
 	}
 
 	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
-	defer println()
+	defer fmt.Println()
 
 	resources, success := openapi.Parse(crds, version, pointers)
 	if !success {
