@@ -57,7 +57,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	slog.With("target", target, "path", path, "module", module,
 		"exclude", excludeFlags, "clear", clearTarget, "use-git", useGit).Info("generate-crd-api")
-	defer println()
+	defer fmt.Println()
 
 	tmp, err := os.MkdirTemp("", "extract-crd-api")
 	if err != nil {
