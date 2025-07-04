@@ -138,8 +138,11 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 				if len(prop.Properties) > 0 {
 					fieldType = r.generateStructProperty(cr, &prop, fieldName, path, propName, root)
 				} else {
-					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil {
+					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil { //nolint:gocritic
 						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema)
+					} else if prop.XPreserveUnknownFields != nil && *prop.XPreserveUnknownFields {
+						fieldType = "runtime.RawExtension"
+						cr.Imports[`runtime "k8s.io/apimachinery/pkg/runtime"`] = true
 					} else {
 						// Object with no properties, use map
 						fieldType = "map[string]any"
@@ -156,8 +159,11 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 			// Handle references
 			parts := strings.Split(*prop.Ref, "/")
 			fieldType = ToCamelCase(parts[len(parts)-1])
+		} else if prop.XIntOrString {
+			fieldType = "intstr.IntOrString"
+			cr.Imports[`"k8s.io/apimachinery/pkg/util/intstr"`] = true
 		} else {
-			fieldType = "*apiextensionsv1.JSON"
+			fieldType = "apiextensionsv1.JSON"
 			cr.Imports[`apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"`] = true
 		}
 
