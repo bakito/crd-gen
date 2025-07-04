@@ -130,7 +130,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		var fieldType string
 
 		if prop.Type != "" { //nolint:gocritic
-			fieldType = mapType(prop)
+			fieldType = mapType(prop, cr)
 
 			// Handle nested objects by creating a new struct
 			switch prop.Type {
@@ -139,7 +139,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 					fieldType = r.generateStructProperty(cr, &prop, fieldName, path, propName, root)
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil { //nolint:gocritic
-						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema)
+						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema, cr)
 					} else if prop.XPreserveUnknownFields != nil && *prop.XPreserveUnknownFields {
 						fieldType = "runtime.RawExtension"
 						cr.Imports[`runtime "k8s.io/apimachinery/pkg/runtime"`] = true
@@ -153,7 +153,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 					fieldType = "[]" + r.generateStructProperty(cr, prop.Items.Schema, fieldName, path, propName, root)
 				}
 			default:
-				fieldType = mapType(prop)
+				fieldType = mapType(prop, cr)
 			}
 		} else if prop.Ref != nil {
 			// Handle references
@@ -198,7 +198,7 @@ func (r *CustomResources) generateEnumStruct(
 	} else {
 		uniqFieldName := r.newUniqFieldName(cr, fieldName, false, path)
 		field.Enums = generateEnum(prop, uniqFieldName)
-		field.EnumType = mapType(*prop)
+		field.EnumType = mapType(*prop, cr)
 		field.EnumName = uniqFieldName
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
@@ -287,11 +287,15 @@ func extractSchemas(
 }
 
 // Helper function to map OpenAPI types to Go types.
-func mapType(prop apiv1.JSONSchemaProps) string {
+func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 	if prop.Type == "" {
 		if prop.Ref != nil {
 			parts := strings.Split(*prop.Ref, "/")
 			return ToCamelCase(parts[len(parts)-1])
+		}
+		if prop.XIntOrString {
+			cr.Imports[`"k8s.io/apimachinery/pkg/util/intstr"`] = true
+			return "intstr.IntOrString"
 		}
 		return "any"
 	}
@@ -328,7 +332,7 @@ func mapType(prop apiv1.JSONSchemaProps) string {
 		return "bool"
 	case "array":
 		if prop.Items != nil && prop.Items.Schema != nil {
-			itemType := mapType(*prop.Items.Schema)
+			itemType := mapType(*prop.Items.Schema, cr)
 			return "[]" + itemType
 		}
 		return "[]any"
