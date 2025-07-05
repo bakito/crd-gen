@@ -15,11 +15,22 @@ import (
 	"unicode"
 
 	apiv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-func Parse(crds []string, version string, pointerVars bool) (res *CustomResources, success bool) {
+var k8sConfig clientcmd.ClientConfig
+
+func Parse(
+	k8sCfg clientcmd.ClientConfig,
+	crds []string,
+	version string,
+	pointerVars bool,
+) (res *CustomResources, success bool) {
+	k8sConfig = k8sCfg
 	res = &CustomResources{
 		structHashes: make(map[string]string),
 		structNames:  make(map[string]bool),
@@ -54,36 +65,9 @@ func Parse(crds []string, version string, pointerVars bool) (res *CustomResource
 }
 
 func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFirst bool) (string, bool) {
-	// Read the first crd file
-	var data []byte
-	var err error
-	if strings.HasPrefix(crd, "http://") || strings.HasPrefix(crd, "https://") {
-		// Download the file to a temp location
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, crd, http.NoBody)
-		if err != nil {
-			slog.Error("Error creating request", "error", err)
-			return "", false
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			slog.Error("Error downloading file", "error", err)
-			return "", false
-		}
-		defer resp.Body.Close()
-
-		data, err = io.ReadAll(resp.Body)
-		if err != nil {
-			slog.Error("Error reading downloaded file", "error", err)
-			return "", false
-		}
-	} else {
-		// Read the local file
-		data, err = os.ReadFile(crd)
-		if err != nil {
-			slog.Error("Error reading file", "error", err)
-			return "", false
-		}
+	data, ok := readCRD(crd)
+	if !ok {
+		return "", false
 	}
 
 	cr, err := res.parseCRD(data, res.Version)
@@ -114,6 +98,72 @@ func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFir
 	res.Group = cr.group
 	res.Items = append(res.Items, cr)
 	return cr.Kind, true
+}
+
+func readCRD(crd string) ([]byte, bool) {
+	// Read the first crd file
+	var data []byte
+	var err error
+	switch {
+	case strings.HasPrefix(crd, "http://") || strings.HasPrefix(crd, "https://"):
+		// Download the file to a temp location
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, crd, http.NoBody)
+		if err != nil {
+			slog.Error("Error creating request", "error", err)
+			return nil, false
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			slog.Error("Error downloading file", "error", err)
+			return nil, false
+		}
+		defer resp.Body.Close()
+
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Error("Error reading downloaded file", "error", err)
+			return nil, false
+		}
+
+	case strings.HasPrefix(crd, "k8s:"):
+		// Fetch CRD via k8s client
+		conf, err := k8sConfig.ClientConfig()
+		if err != nil {
+			slog.Error("Error creating k8s client config", "error", err)
+			return nil, false
+		}
+
+		crdName := strings.TrimPrefix(crd, "k8s:")
+		client, err := clientset.NewForConfig(conf)
+		if err != nil {
+			slog.Error("Error creating k8s client", "error", err)
+			return nil, false
+		}
+
+		crdDef, err := client.ApiextensionsV1().
+			CustomResourceDefinitions().
+			Get(context.Background(), crdName, metav1.GetOptions{})
+		if err != nil {
+			slog.Error("Error getting CRD", "error", err)
+			return nil, false
+		}
+
+		data, err = json.Marshal(crdDef)
+		if err != nil {
+			slog.Error("Error marshaling CRD", "error", err)
+			return nil, false
+		}
+
+	default:
+		// Read the local file
+		data, err = os.ReadFile(crd)
+		if err != nil {
+			slog.Error("Error reading file", "error", err)
+			return nil, false
+		}
+	}
+	return data, true
 }
 
 func (r *CustomResources) parseCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/bakito/crd-gen/internal/openapi"
 	"github.com/bakito/crd-gen/internal/render"
@@ -17,6 +18,8 @@ var (
 	target   string
 	version  string
 	pointers bool
+
+	clientConfig clientcmd.ClientConfig
 
 	rootCmd = &cobra.Command{
 		Use:   "generate-crd-api",
@@ -32,6 +35,11 @@ func init() {
 	rootCmd.Flags().
 		StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
 	_ = rootCmd.MarkFlagRequired("target")
+
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := clientcmd.ConfigOverrides{}
+	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
 func main() {
@@ -48,7 +56,7 @@ func run(_ *cobra.Command, _ []string) error {
 	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
 	defer fmt.Println()
 
-	resources, success := openapi.Parse(crds, version, pointers)
+	resources, success := openapi.Parse(clientConfig, crds, version, pointers)
 	if !success {
 		return errors.New("failed to parse CRDs")
 	}
