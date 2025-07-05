@@ -17,6 +17,7 @@ import (
 
 var (
 	excludeFlags []string
+	includeFlags []string
 	module       string
 	path         string
 	target       string
@@ -31,7 +32,9 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().StringSliceVarP(&excludeFlags, "exclude", "e", nil, "Regex pattern for file excludes")
+	rootCmd.Flags().
+		StringSliceVarP(&excludeFlags, "exclude", "e", nil, "Regex pattern for file excludes (not considered if includes are defined)")
+	rootCmd.Flags().StringSliceVarP(&includeFlags, "include", "e", nil, "Regex pattern for file includes")
 	rootCmd.Flags().StringVarP(&module, "module", "m", "", "The go module to get the api files from")
 	rootCmd.Flags().StringVarP(&path, "path", "p", "", "The path within the module to the api files")
 	rootCmd.Flags().StringVarP(&target, "target", "t", "", "The target directory to copyFile the files to")
@@ -49,14 +52,23 @@ func main() {
 	}
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	var excludes []*regexp.Regexp
-	for _, excludeFlag := range excludeFlags {
-		excludes = append(excludes, regexp.MustCompile(excludeFlag))
+func run(_ *cobra.Command, _ []string) error {
+	var includes, excludes []*regexp.Regexp
+	l := slog.With("target", target, "path", path, "module", module,
+		"clear", clearTarget, "use-git", useGit)
+	if len(includeFlags) > 0 {
+		for _, includeFlag := range includeFlags {
+			includes = append(includes, regexp.MustCompile(includeFlag))
+		}
+		l = l.With("include", includeFlags)
+	} else {
+		for _, excludeFlag := range excludeFlags {
+			excludes = append(excludes, regexp.MustCompile(excludeFlag))
+		}
+		l = l.With("exclude", excludeFlags)
 	}
 
-	slog.With("target", target, "path", path, "module", module,
-		"exclude", excludeFlags, "clear", clearTarget, "use-git", useGit).Info("generate-crd-api")
+	l.Info("generate-crd-api")
 	defer fmt.Println()
 
 	tmp, err := os.MkdirTemp("", "extract-crd-api")
@@ -138,7 +150,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, e := range entries {
-		if keep(e.Name(), excludes) {
+		if keep(e.Name(), includes, excludes) {
 			err = copyFile(filepath.Join(apiPath, e.Name()), filepath.Join(target, e.Name()))
 			if err != nil {
 				return fmt.Errorf("failed to copy file %s: %w", e.Name(), err)
@@ -148,7 +160,15 @@ func run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func keep(name string, excludes []*regexp.Regexp) bool {
+func keep(name string, includes, excludes []*regexp.Regexp) bool {
+	if len(includes) > 0 {
+		for _, include := range includes {
+			if include.MatchString(name) {
+				return true
+			}
+		}
+		return false
+	}
 	for _, exclude := range excludes {
 		if exclude.MatchString(name) {
 			return false
