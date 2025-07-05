@@ -1,11 +1,14 @@
 package openapi
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -25,41 +28,10 @@ func Parse(crds []string, version string, pointerVars bool) (res *CustomResource
 	var crdKind string
 
 	for i, crd := range crds {
-		// Read first crd file
-		data, err := os.ReadFile(crd)
-		if err != nil {
-			slog.Error("Error reading file", "error", err)
+		var ok bool
+		if crdKind, ok = prepareCRD(crd, res, crdKind, version, i == 0); !ok {
 			return nil, false
 		}
-
-		cr, err := res.parseSingleCRD(data, res.Version)
-		if err != nil {
-			slog.Error("Error parsing crd", "error", err)
-			return nil, false
-		}
-		res.Names = append(res.Names, CRDNames{Kind: cr.Kind, List: cr.List})
-
-		if i > 0 && res.Group != cr.group {
-			slog.Error(
-				"Not all CRD have the same group",
-				"group-a", res.Group, "kind-a", crdKind,
-				"group-b", cr.group, "kind-b", cr.Kind,
-			)
-			return nil, false
-		}
-
-		if version != "" && version != cr.version {
-			slog.Error(
-				"Not all CRD have the same version",
-				"group-a", res.Group, "version-a", version, "kind-a", crdKind,
-				"group-b", cr.group, "version-b", cr.version, "kind-b", cr.Kind,
-			)
-			return nil, false
-		}
-		res.Version = cr.version
-		crdKind = cr.Kind
-		res.Group = cr.group
-		res.Items = append(res.Items, cr)
 	}
 
 	if pointerVars {
@@ -81,7 +53,70 @@ func Parse(crds []string, version string, pointerVars bool) (res *CustomResource
 	return res, true
 }
 
-func (r *CustomResources) parseSingleCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {
+func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFirst bool) (string, bool) {
+	// Read the first crd file
+	var data []byte
+	var err error
+	if strings.HasPrefix(crd, "http://") || strings.HasPrefix(crd, "https://") {
+		// Download the file to a temp location
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, crd, http.NoBody)
+		if err != nil {
+			slog.Error("Error creating request", "error", err)
+			return "", false
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			slog.Error("Error downloading file", "error", err)
+			return "", false
+		}
+		defer resp.Body.Close()
+
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Error("Error reading downloaded file", "error", err)
+			return "", false
+		}
+	} else {
+		// Read the local file
+		data, err = os.ReadFile(crd)
+		if err != nil {
+			slog.Error("Error reading file", "error", err)
+			return "", false
+		}
+	}
+
+	cr, err := res.parseCRD(data, res.Version)
+	if err != nil {
+		slog.Error("Error parsing crd", "error", err)
+		return "", false
+	}
+	res.Names = append(res.Names, CRDNames{Kind: cr.Kind, List: cr.List})
+
+	if !isFirst && res.Group != cr.group {
+		slog.Error(
+			"Not all CRD have the same group",
+			"group-a", res.Group, "kind-a", crdKind,
+			"group-b", cr.group, "kind-b", cr.Kind,
+		)
+		return "", false
+	}
+
+	if version != "" && version != cr.version {
+		slog.Error(
+			"Not all CRD have the same version",
+			"group-a", res.Group, "version-a", version, "kind-a", crdKind,
+			"group-b", cr.group, "version-b", cr.version, "kind-b", cr.Kind,
+		)
+		return "", false
+	}
+	res.Version = cr.version
+	res.Group = cr.group
+	res.Items = append(res.Items, cr)
+	return cr.Kind, true
+}
+
+func (r *CustomResources) parseCRD(crdData []byte, desiredVersion string) (*CustomResource, error) {
 	// Parse CRD YAML
 	var crd apiv1.CustomResourceDefinition
 	err := yaml.Unmarshal(crdData, &crd)
