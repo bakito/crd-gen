@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().
 		StringSliceVarP(&excludeFlags, "exclude", "e", nil, "Regex pattern for file excludes (not considered if includes are defined)")
-	rootCmd.Flags().StringSliceVarP(&includeFlags, "include", "e", nil, "Regex pattern for file includes")
+	rootCmd.Flags().StringSliceVarP(&includeFlags, "include", "i", nil, "Regex pattern for file includes")
 	rootCmd.Flags().StringVarP(&module, "module", "m", "", "The go module to get the api files from")
 	rootCmd.Flags().StringVarP(&path, "path", "p", "", "The path within the module to the api files")
 	rootCmd.Flags().StringVarP(&target, "target", "t", "", "The target directory to copyFile the files to")
