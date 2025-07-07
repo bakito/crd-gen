@@ -224,7 +224,11 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 					fieldType = r.generateStructProperty(cr, &prop, fieldName, path, propName, root)
 				} else {
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil { //nolint:gocritic
-						fieldType = "map[string]" + mapType(*prop.AdditionalProperties.Schema, cr)
+						additional := mapType(*prop.AdditionalProperties.Schema, cr)
+						if additional == "map[string]any" {
+							additional = r.generateStructProperty(cr, prop.AdditionalProperties.Schema, fieldName, path, propName, root)
+						}
+						fieldType = "map[string]" + additional
 					} else if prop.XPreserveUnknownFields != nil && *prop.XPreserveUnknownFields {
 						fieldType = "runtime.RawExtension"
 						cr.Imports[`runtime "k8s.io/apimachinery/pkg/runtime"`] = true
