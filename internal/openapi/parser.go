@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	WildcardEnum    = "*"
-	WildcardReplace = "All"
+	wildcardEnum    = "*"
+	wildcardReplace = "All"
 )
 
 var k8sConfig clientcmd.ClientConfig
@@ -442,8 +442,8 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 // createEnumName creates a cleaned and formatted enum name by combining field name and suffix.
 func createEnumName(fieldName, enumValue string) string {
 	cleanedValue := strings.ReplaceAll(enumValue, `"`, "")
-	if enumValue == WildcardEnum {
-		cleanedValue = WildcardReplace
+	if cleanedValue == wildcardEnum {
+		cleanedValue = wildcardReplace
 	}
 	return fieldName + ToCamelCase(cleanedValue)
 }
