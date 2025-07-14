@@ -22,6 +22,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	WildcardEnum    = "*"
+	WildcardReplace = "All"
+)
+
 var k8sConfig clientcmd.ClientConfig
 
 func Parse(
@@ -434,13 +439,21 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 	}
 }
 
-// Process schema and generate enums.
+// createEnumName creates a cleaned and formatted enum name by combining field name and suffix.
+func createEnumName(fieldName, enumValue string) string {
+	cleanedValue := strings.ReplaceAll(enumValue, `"`, "")
+	if enumValue == WildcardEnum {
+		cleanedValue = WildcardReplace
+	}
+	return fieldName + ToCamelCase(cleanedValue)
+}
+
 func generateEnum(prop *apiv1.JSONSchemaProps, fieldName string) (enums []EnumDef) {
-	for _, e := range prop.Enum {
-		val := string(e.Raw)
+	for _, enumRaw := range prop.Enum {
+		enumValue := string(enumRaw.Raw)
 		enums = append(enums, EnumDef{
-			Name:  fieldName + ToCamelCase(strings.ReplaceAll(val, `"`, "")),
-			Value: val,
+			Name:  createEnumName(fieldName, enumValue),
+			Value: enumValue,
 		})
 	}
 	return enums
