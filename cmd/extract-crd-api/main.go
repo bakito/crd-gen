@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -52,7 +53,7 @@ func main() {
 	}
 }
 
-func run(_ *cobra.Command, _ []string) error {
+func run(cmd *cobra.Command, _ []string) error {
 	var includes, excludes []*regexp.Regexp
 	l := slog.With("target", target, "path", path, "module", module,
 		"clear", clearTarget, "use-git", useGit)
@@ -68,7 +69,7 @@ func run(_ *cobra.Command, _ []string) error {
 		l = l.With("exclude", excludeFlags)
 	}
 
-	l.Info("generate-crd-api")
+	l.InfoContext(cmd.Context(), "generate-crd-api")
 	defer fmt.Println()
 
 	tmp, err := os.MkdirTemp("", "extract-crd-api")
@@ -79,7 +80,7 @@ func run(_ *cobra.Command, _ []string) error {
 	moduleRoot := tmp
 
 	if useGit {
-		slog.With("module", module, "tmp", tmp).Info("Cloning module")
+		slog.With("module", module, "tmp", tmp).InfoContext(cmd.Context(), "Cloning module")
 		info := strings.Split(module, "@")
 
 		var out bytes.Buffer
@@ -87,7 +88,7 @@ func run(_ *cobra.Command, _ []string) error {
 			URL:      "https://" + info[0],
 			Progress: &out,
 		})
-		slog.Debug("Git clone output", "output", out.String())
+		slog.DebugContext(cmd.Context(), "Git clone output", "output", out.String())
 		if err != nil {
 			return fmt.Errorf("failed to clone module: %w", err)
 		}
@@ -106,15 +107,15 @@ func run(_ *cobra.Command, _ []string) error {
 	} else {
 		var execOut bytes.Buffer
 		var execErr bytes.Buffer
-		cmd := exec.Command("go", "mod", "download", module)
-		cmd.Stdout = &execOut
-		cmd.Stderr = &execErr
+		goCmd := exec.CommandContext(cmd.Context(), "go", "mod", "download", module)
+		goCmd.Stdout = &execOut
+		goCmd.Stderr = &execErr
 
-		cmd.Env = append(os.Environ(), "GOMODCACHE="+tmp)
+		goCmd.Env = append(os.Environ(), "GOMODCACHE="+tmp)
 
-		slog.With("module", module, "tmp", tmp).Info("Downloading")
-		err = cmd.Run()
-		slog.Debug("go mod download output", "output", execOut.String())
+		slog.With("module", module, "tmp", tmp).InfoContext(cmd.Context(), "Downloading")
+		err = goCmd.Run()
+		slog.DebugContext(cmd.Context(), "go mod download output", "output", execOut.String())
 		if err != nil {
 			return fmt.Errorf("failed to download module: %w\nstdout: %s\nstderr: %s",
 				err, execOut.String(), execErr.String())
@@ -122,18 +123,17 @@ func run(_ *cobra.Command, _ []string) error {
 
 		execOut = bytes.Buffer{}
 		execErr = bytes.Buffer{}
-
-		cmd = exec.Command("chmod", "+w", "-R", tmp)
-		cmd.Stdout = &execOut
-		cmd.Stderr = &execErr
-		err = cmd.Run()
+		chmodCmd := exec.CommandContext(cmd.Context(), "chmod", "+w", "-R", tmp)
+		chmodCmd.Stdout = &execOut
+		chmodCmd.Stderr = &execErr
+		err = chmodCmd.Run()
 		if err != nil {
 			return fmt.Errorf("failed to set permissions: %w\nstdout: %s\nstderr: %s",
 				err, execOut.String(), execErr.String())
 		}
 		moduleRoot = filepath.Join(tmp, module)
 	}
-	slog.Info("Module downloaded successfully!")
+	slog.InfoContext(cmd.Context(), "Module downloaded successfully!")
 
 	apiPath := filepath.Join(moduleRoot, path)
 	entries, err := os.ReadDir(filepath.Join(moduleRoot, path))
@@ -151,7 +151,7 @@ func run(_ *cobra.Command, _ []string) error {
 
 	for _, e := range entries {
 		if keep(e.Name(), includes, excludes) {
-			err = copyFile(filepath.Join(apiPath, e.Name()), filepath.Join(target, e.Name()))
+			err = copyFile(cmd.Context(), filepath.Join(apiPath, e.Name()), filepath.Join(target, e.Name()))
 			if err != nil {
 				return fmt.Errorf("failed to copy file %s: %w", e.Name(), err)
 			}
@@ -177,8 +177,8 @@ func keep(name string, includes, excludes []*regexp.Regexp) bool {
 	return true
 }
 
-func copyFile(src, dst string) error {
-	slog.With("from", src, "to", dst).Info("Copy file")
+func copyFile(ctx context.Context, src, dst string) error {
+	slog.With("from", src, "to", dst).InfoContext(ctx, "Copy file")
 	// Read all content of src to data, may cause OOM for a large file.
 	data, err := os.ReadFile(src)
 	if err != nil {
