@@ -1,6 +1,7 @@
 package render
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"log/slog"
@@ -24,7 +25,7 @@ var (
 	typeTpl string
 )
 
-func WriteCrdFiles(resources *openapi.CustomResources, targetDir string) error {
+func WriteCrdFiles(ctx context.Context, resources *openapi.CustomResources, targetDir string) error {
 	var files []outFile
 	for _, cr := range resources.Items {
 		// Generate types code
@@ -66,10 +67,10 @@ func WriteCrdFiles(resources *openapi.CustomResources, targetDir string) error {
 		},
 	})
 
-	return writeFiles(files)
+	return writeFiles(ctx, files)
 }
 
-func writeFiles(files []outFile) error {
+func writeFiles(ctx context.Context, files []outFile) error {
 	for _, f := range files {
 		dir := filepath.Dir(f.name)
 
@@ -82,7 +83,7 @@ func writeFiles(files []outFile) error {
 			return fmt.Errorf("error writing output file: %w", err)
 		}
 
-		slog.With(f.successArgs...).Info(f.successMsg)
+		slog.With(f.successArgs...).InfoContext(ctx, f.successMsg)
 	}
 	return nil
 }

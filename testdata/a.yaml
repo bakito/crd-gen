@@ -1,0 +1,77 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-certificates-volume
+  annotations:
+    policies.kyverno.io/title: Add Certificates as a Volume
+    policies.kyverno.io/category: Sample
+    policies.kyverno.io/subject: Pod,Volume
+    kyverno.io/kyverno-version: 1.6.0
+    kyverno.io/kubernetes-version: "1.21"
+    policies.kyverno.io/minversion: 1.5.0
+    pod-policies.kyverno.io/autogen-controllers: DaemonSet,Deployment,Job,StatefulSet
+    policies.kyverno.io/description: >-
+      In some cases you would need to trust custom CA certificates for all the containers of a Pod.
+      It makes sense to be in a ConfigMap so that you can automount them by only setting an annotation.
+      This policy adds a volume to all containers in a Pod containing the certificate if the annotation
+      called `inject-certs` with value `enabled` is found.
+spec:
+  background: false
+  rules:
+    - name: add-ssl-certs
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      preconditions:
+        all:
+          - key: '{{request.object.metadata.annotations."bakito.net/inject-certs" || ""}}'
+            operator: NotEquals
+
+
+            value: enabled
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyIn
+            value:
+              - CREATE
+              - UPDATE
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    volumeMounts:
+                      - name: etc-ssl-certs
+                        mountPath: {{request.object.metadata.annotations."bakito.net/inject-certs"}}
+                volumes:
+                  - name: etc-ssl-certs
+                    configMap:
+                      name: kube-root-ca.crt
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: test
+  labels:
+    app: nginx
+  annotations:
+    bakito.net/inject-certs: /foo/bar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.14.2
+          ports:
+            - containerPort: 80

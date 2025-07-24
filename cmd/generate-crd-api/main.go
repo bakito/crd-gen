@@ -48,18 +48,18 @@ func main() {
 	}
 }
 
-func run(_ *cobra.Command, _ []string) error {
+func run(cmd *cobra.Command, _ []string) error {
 	if len(crds) == 0 {
 		return errors.New("at least one CRD must be defined")
 	}
 
-	slog.With("target", target, "crd", crds, "version", version).Info("generate-crd-api")
+	slog.With("target", target, "crd", crds, "version", version).InfoContext(cmd.Context(), "generate-crd-api")
 	defer fmt.Println()
 
-	resources, success := openapi.Parse(clientConfig, crds, version, pointers)
+	resources, success := openapi.Parse(cmd.Context(), clientConfig, crds, version, pointers)
 	if !success {
 		return errors.New("failed to parse CRDs")
 	}
 
-	return render.WriteCrdFiles(resources, target)
+	return render.WriteCrdFiles(cmd.Context(), resources, target)
 }

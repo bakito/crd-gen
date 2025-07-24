@@ -30,6 +30,7 @@ const (
 var k8sConfig clientcmd.ClientConfig
 
 func Parse(
+	ctx context.Context,
 	k8sCfg clientcmd.ClientConfig,
 	crds []string,
 	version string,
@@ -45,7 +46,7 @@ func Parse(
 
 	for i, crd := range crds {
 		var ok bool
-		if crdKind, ok = prepareCRD(crd, res, crdKind, version, i == 0); !ok {
+		if crdKind, ok = prepareCRD(ctx, crd, res, crdKind, version, i == 0); !ok {
 			return nil, false
 		}
 	}
@@ -69,21 +70,21 @@ func Parse(
 	return res, true
 }
 
-func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFirst bool) (string, bool) {
-	data, ok := readCRD(crd)
+func prepareCRD(ctx context.Context, crd string, res *CustomResources, crdKind, version string, isFirst bool) (string, bool) {
+	data, ok := readCRD(ctx, crd)
 	if !ok {
 		return "", false
 	}
 
 	cr, err := res.parseCRD(data, res.Version)
 	if err != nil {
-		slog.Error("Error parsing crd", "error", err)
+		slog.ErrorContext(ctx, "Error parsing crd", "error", err)
 		return "", false
 	}
 	res.Names = append(res.Names, CRDNames{Kind: cr.Kind, List: cr.List})
 
 	if !isFirst && res.Group != cr.group {
-		slog.Error(
+		slog.ErrorContext(ctx,
 			"Not all CRD have the same group",
 			"group-a", res.Group, "kind-a", crdKind,
 			"group-b", cr.group, "kind-b", cr.Kind,
@@ -92,7 +93,7 @@ func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFir
 	}
 
 	if version != "" && version != cr.version {
-		slog.Error(
+		slog.ErrorContext(ctx,
 			"Not all CRD have the same version",
 			"group-a", res.Group, "version-a", version, "kind-a", crdKind,
 			"group-b", cr.group, "version-b", cr.version, "kind-b", cr.Kind,
@@ -105,7 +106,7 @@ func prepareCRD(crd string, res *CustomResources, crdKind, version string, isFir
 	return cr.Kind, true
 }
 
-func readCRD(crd string) ([]byte, bool) {
+func readCRD(ctx context.Context, crd string) ([]byte, bool) {
 	// Read the first crd file
 	var data []byte
 	var err error
@@ -114,20 +115,20 @@ func readCRD(crd string) ([]byte, bool) {
 		// Download the file to a temp location
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, crd, http.NoBody)
 		if err != nil {
-			slog.Error("Error creating request", "error", err)
+			slog.ErrorContext(ctx, "Error creating request", "error", err)
 			return nil, false
 		}
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			slog.Error("Error downloading file", "error", err)
+			slog.ErrorContext(ctx, "Error downloading file", "error", err)
 			return nil, false
 		}
 		defer resp.Body.Close()
 
 		data, err = io.ReadAll(resp.Body)
 		if err != nil {
-			slog.Error("Error reading downloaded file", "error", err)
+			slog.ErrorContext(ctx, "Error reading downloaded file", "error", err)
 			return nil, false
 		}
 
@@ -135,14 +136,14 @@ func readCRD(crd string) ([]byte, bool) {
 		// Fetch CRD via k8s client
 		conf, err := k8sConfig.ClientConfig()
 		if err != nil {
-			slog.Error("Error creating k8s client config", "error", err)
+			slog.ErrorContext(ctx, "Error creating k8s client config", "error", err)
 			return nil, false
 		}
 
 		crdName := strings.TrimPrefix(crd, "k8s:")
 		client, err := clientset.NewForConfig(conf)
 		if err != nil {
-			slog.Error("Error creating k8s client", "error", err)
+			slog.ErrorContext(ctx, "Error creating k8s client", "error", err)
 			return nil, false
 		}
 
@@ -150,13 +151,13 @@ func readCRD(crd string) ([]byte, bool) {
 			CustomResourceDefinitions().
 			Get(context.Background(), crdName, metav1.GetOptions{})
 		if err != nil {
-			slog.Error("Error getting CRD", "error", err)
+			slog.ErrorContext(ctx, "Error getting CRD", "error", err)
 			return nil, false
 		}
 
 		data, err = json.Marshal(crdDef)
 		if err != nil {
-			slog.Error("Error marshaling CRD", "error", err)
+			slog.ErrorContext(ctx, "Error marshaling CRD", "error", err)
 			return nil, false
 		}
 
@@ -164,7 +165,7 @@ func readCRD(crd string) ([]byte, bool) {
 		// Read the local file
 		data, err = os.ReadFile(crd)
 		if err != nil {
-			slog.Error("Error reading file", "error", err)
+			slog.ErrorContext(ctx, "Error reading file", "error", err)
 			return nil, false
 		}
 	}
@@ -402,6 +403,7 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 				return "metav1.Time"
 			case "byte", "binary":
 				return "[]byte"
+			default:
 			}
 		}
 		return "string"
@@ -416,6 +418,7 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 				return "float32"
 			case "double":
 				return "float64"
+			default:
 			}
 		}
 		if prop.Type == "integer" {
