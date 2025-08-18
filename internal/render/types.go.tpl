@@ -11,7 +11,7 @@ import (
 {{- end }}
 )
 
-// Generated from Certificate.cert-manager.io/v1 CRD
+// +kubebuilder:object:generate=true
 
 // +kubebuilder:object:root=true
 
