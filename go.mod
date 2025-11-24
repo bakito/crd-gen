@@ -3,7 +3,7 @@ module github.com/bakito/crd-gen
 go 1.24.3
 
 require (
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.4
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apiextensions-apiserver v0.34.2
