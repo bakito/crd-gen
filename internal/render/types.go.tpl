@@ -7,7 +7,7 @@ package {{ .Version }}
 
 import (
 {{- range .Imports }}
-    {{ . }}
+	{{ . }}
 {{- end }}
 )
 
@@ -29,7 +29,9 @@ type {{ .Kind }} struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	{{- range .Root.Fields }}
-	{{ if .Description }}// {{ .Description }}{{ end}}
+	{{- if .Description }}
+	// {{ .Description }}
+	{{- end }}
 	{{ .Name }} {{ .Type }} `json:"{{ .JSONTag }},omitempty"`
 	{{- end }}
 }
@@ -38,7 +40,9 @@ type {{ .Kind }} struct {
 {{ if $struct.Description }}// {{ $struct.Description  }}{{ end }}
 type {{ $struct.Name }} struct {
 	{{- range $_, $field :=  $struct.Fields }}
-	{{ if $field.Description }}// {{ $field.Description }}{{ end}}
+	{{- if $field.Description }}
+	// {{ $field.Description }}
+	{{- end }}
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
 	{{- end }}
 }

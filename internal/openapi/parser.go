@@ -232,7 +232,14 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil { //nolint:gocritic
 						additional := mapType(*prop.AdditionalProperties.Schema, cr)
 						if additional == "map[string]any" {
-							additional = r.generateStructProperty(cr, prop.AdditionalProperties.Schema, fieldName, path, propName, root)
+							additional = r.generateStructProperty(
+								cr,
+								prop.AdditionalProperties.Schema,
+								fieldName,
+								path,
+								propName,
+								root,
+							)
 						}
 						fieldType = "map[string]" + additional
 					} else if prop.XPreserveUnknownFields != nil && *prop.XPreserveUnknownFields {
