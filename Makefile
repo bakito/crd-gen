@@ -27,9 +27,6 @@ generate-ci:
 	go run ./cmd/generate-crd-api \
 	  --target tmp/apis --pointer \
 	  --crd testdata/certificates.cert-manager.io.yaml
-	go run ./cmd/generate-crd-api \
-	  --target tmp/apis/es --pointer \
-	  --crd testdata/external-secrets.io_clustersecretstores.yaml
 	go tool controller-gen object paths=./tmp/apis/v1
 
 generate: generate-ci
