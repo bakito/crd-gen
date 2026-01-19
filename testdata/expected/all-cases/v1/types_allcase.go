@@ -72,6 +72,7 @@ type AllCaseSpec struct {
 	RawExtensionField runtime.RawExtension `json:"rawExtensionField,omitempty"`
 	// A simple string field
 	StringField string `json:"stringField,omitempty"`
+	StringWithoutDescriptionField string `json:"stringWithoutDescriptionField,omitempty"`
 }
 
 // ArrayOfObjects represents a AllCase.spec.arrayOfObjects
