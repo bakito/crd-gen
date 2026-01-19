@@ -1,0 +1,112 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: allcases.testing.crd-gen
+spec:
+  group: testing.crd-gen
+  names:
+    kind: AllCase
+    listKind: AllCaseList
+    plural: allcases
+    singular: allcase
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                stringField:
+                  type: string
+                  description: "A simple string field"
+                stringWithoutDescriptionField:
+                  type: string
+                dateTimeField:
+                  type: string
+                  format: date-time
+                  description: "A string field formatted as date-time"
+                byteField:
+                  type: string
+                  format: byte
+                  description: "A string field formatted as byte"
+                binaryField:
+                  type: string
+                  format: binary
+                  description: "A string field formatted as binary"
+                int32Field:
+                  type: integer
+                  format: int32
+                  description: "An integer field with int32 format"
+                int64Field:
+                  type: integer
+                  format: int64
+                  description: "An integer field with int64 format"
+                defaultIntField:
+                  type: integer
+                  description: "An integer field without explicit format"
+                float32Field:
+                  type: number
+                  format: float
+                  description: "A number field with float32 format"
+                float64Field:
+                  type: number
+                  format: double
+                  description: "A number field with float64 format"
+                defaultFloatField:
+                  type: number
+                  description: "A number field without explicit format"
+                boolField:
+                  type: boolean
+                  description: "A boolean field"
+                intOrStringField:
+                  x-kubernetes-int-or-string: true
+                  description: "A field that can be an integer or a string"
+                objectField:
+                  type: object
+                  description: "A nested object field"
+                  properties:
+                    nestedString:
+                      type: string
+                      description: "A string within the nested object"
+                    nestedInt:
+                      type: integer
+                      description: "An integer within the nested object"
+                arrayOfString:
+                  type: array
+                  description: "An array of strings"
+                  items:
+                    type: string
+                arrayOfObjects:
+                  type: array
+                  description: "An array of objects"
+                  items:
+                    type: object
+                    properties:
+                      nestedArrayString:
+                        type: string
+                        description: "A string within an object in the array"
+                mapField:
+                  type: object
+                  description: "A map field with string keys and string values"
+                  additionalProperties:
+                    type: string
+                enumField:
+                  type: string
+                  description: "An enum field with predefined values"
+                  enum:
+                    - "Value1"
+                    - "Value2"
+                    - ""
+                    - "*"
+                rawExtensionField:
+                  type: object
+                  description: "A field for raw Kubernetes JSON extension"
+                  x-kubernetes-preserve-unknown-fields: true
+                emptyObjectField:
+                  type: object
+                  description: "An empty object field without properties"

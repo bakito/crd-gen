@@ -20,22 +20,24 @@ var (
 	pointers bool
 
 	clientConfig clientcmd.ClientConfig
+)
 
-	rootCmd = &cobra.Command{
+func newRootCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "generate-crd-api",
 		Short: "Generate Go API code from CRD files",
 		RunE:  run,
 	}
-)
+	cmd.Flags().StringSliceVar(&crds, "crd", nil, "CRD file to process")
+	cmd.Flags().StringVar(&target, "target", "", "The target directory to copyFile the files to")
+	cmd.Flags().BoolVar(&pointers, "pointer", false, "If enabled, struct variables are generated as pointers")
+	cmd.Flags().
+		StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
+	_ = cmd.MarkFlagRequired("target")
+	return cmd
+}
 
 func init() {
-	rootCmd.Flags().StringSliceVar(&crds, "crd", nil, "CRD file to process")
-	rootCmd.Flags().StringVar(&target, "target", "", "The target directory to copyFile the files to")
-	rootCmd.Flags().BoolVar(&pointers, "pointer", false, "If enabled, struct variables are generated as pointers")
-	rootCmd.Flags().
-		StringVar(&version, "version", "", "The version to select from the CRD; If not defined, the first version is used")
-	_ = rootCmd.MarkFlagRequired("target")
-
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	overrides := clientcmd.ConfigOverrides{}
@@ -43,7 +45,7 @@ func init() {
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := newRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
 }
