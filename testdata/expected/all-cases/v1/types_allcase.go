@@ -34,35 +34,57 @@ type AllCase struct {
 
 // AllCaseSpec represents a AllCase.spec
 type AllCaseSpec struct {
+	// An array of objects
 	ArrayOfObjects []ArrayOfObjects `json:"arrayOfObjects,omitempty"`
+	// An array of strings
 	ArrayOfString []string `json:"arrayOfString,omitempty"`
+	// A string field formatted as binary
 	BinaryField []byte `json:"binaryField,omitempty"`
+	// A boolean field
 	BoolField bool `json:"boolField,omitempty"`
+	// A string field formatted as byte
 	ByteField []byte `json:"byteField,omitempty"`
+	// A string field formatted as date-time
 	DateTimeField metav1.Time `json:"dateTimeField,omitempty"`
+	// A number field without explicit format
 	DefaultFloatField float64 `json:"defaultFloatField,omitempty"`
+	// An integer field without explicit format
 	DefaultIntField int64 `json:"defaultIntField,omitempty"`
+	// An empty object field without properties
 	EmptyObjectField runtime.RawExtension `json:"emptyObjectField,omitempty"`
+	// An enum field with predefined values
 	EnumField EnumField `json:"enumField,omitempty"`
+	// A number field with float32 format
 	Float32Field float32 `json:"float32Field,omitempty"`
+	// A number field with float64 format
 	Float64Field float64 `json:"float64Field,omitempty"`
+	// An integer field with int32 format
 	Int32Field int32 `json:"int32Field,omitempty"`
+	// An integer field with int64 format
 	Int64Field int64 `json:"int64Field,omitempty"`
+	// A field that can be an integer or a string
 	IntOrStringField intstr.IntOrString `json:"intOrStringField,omitempty"`
+	// A map field with string keys and string values
 	MapField map[string]string `json:"mapField,omitempty"`
+	// A nested object field
 	ObjectField ObjectField `json:"objectField,omitempty"`
+	// A field for raw Kubernetes JSON extension
 	RawExtensionField runtime.RawExtension `json:"rawExtensionField,omitempty"`
+	// A simple string field
 	StringField string `json:"stringField,omitempty"`
 }
 
 // ArrayOfObjects represents a AllCase.spec.arrayOfObjects
 type ArrayOfObjects struct {
+	// A string within an object in the array
 	NestedArrayString string `json:"nestedArrayString,omitempty"`
 }
 
 // ObjectField represents a AllCase.spec.objectField
 type ObjectField struct {
+	// An integer within the nested object
 	NestedInt int64 `json:"nestedInt,omitempty"`
+	// A string within the nested object
 	NestedString string `json:"nestedString,omitempty"`
 }
 
