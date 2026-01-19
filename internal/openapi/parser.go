@@ -246,7 +246,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 						fieldType = "map[string]" + additional
 					case propName != "metadata":
 						fieldType = "runtime.RawExtension"
-						cr.Imports[`runtime "k8s.io/apimachinery/pkg/runtime"`] = true
+						cr.Imports[`"k8s.io/apimachinery/pkg/runtime"`] = true
 					default:
 						fieldType = "metav1.ObjectMeta"
 					}
