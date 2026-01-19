@@ -230,7 +230,8 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 				if len(prop.Properties) > 0 {
 					fieldType = r.generateStructProperty(cr, &prop, fieldName, path, propName, root)
 				} else {
-					if prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil { //nolint:gocritic
+					switch {
+					case prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil:
 						additional := mapType(*prop.AdditionalProperties.Schema, cr)
 						if additional == "map[string]any" {
 							additional = r.generateStructProperty(
@@ -243,12 +244,11 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 							)
 						}
 						fieldType = "map[string]" + additional
-					} else if prop.XPreserveUnknownFields != nil && *prop.XPreserveUnknownFields {
+					case propName != "metadata":
 						fieldType = "runtime.RawExtension"
 						cr.Imports[`runtime "k8s.io/apimachinery/pkg/runtime"`] = true
-					} else {
-						// Object with no properties, use map
-						fieldType = "map[string]any"
+					default:
+						fieldType = "metav1.ObjectMeta"
 					}
 				}
 			case "array":
@@ -458,6 +458,7 @@ func createEnumName(fieldName, enumValue string) string {
 		cleanedValue = wildcardReplace
 	case "":
 		cleanedValue = enumEmptyValue
+	default:
 	}
 	return fieldName + ToCamelCase(cleanedValue)
 }
