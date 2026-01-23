@@ -44,7 +44,8 @@ type {{ $struct.Name }} struct {
 	{{- if $field.Description }}
 	// {{ $field.Description }}
 	{{- end }}
-	{{- if and (eq $struct.Path "status") (eq $field.Name "Conditions") }}
+	{{- if eq $field.Name "Conditions" }}
+    // +deepequal-gen=false
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
     {{- else }}
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
