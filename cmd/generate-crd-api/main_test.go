@@ -115,10 +115,7 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 		},
 		{
 			name: "all_cases_pointers",
-			args: []string{
-				"--crd", filepath.Join(testdata, "all-cases.testing.crd-gen.yaml"),
-				"--pointer",
-			},
+			args: []string{"--crd", filepath.Join(testdata, "all-cases.testing.crd-gen.yaml"), "--pointer"},
 			expectedFileGolden: map[string]string{
 				"v1/group_version_info.go": filepath.Join(testdata, "expected", "all-cases", "group_version_info.go.txt"),
 				"v1/types_allcase.go":      filepath.Join(testdata, "expected", "all-cases", "types_allcase_pointers.go.txt"),

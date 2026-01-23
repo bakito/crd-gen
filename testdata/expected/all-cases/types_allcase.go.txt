@@ -29,6 +29,7 @@ type AllCase struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec AllCaseSpec `json:"spec,omitempty"`
+	Status AllCaseStatus `json:"status,omitempty"`
 }
 
 
@@ -75,11 +76,17 @@ type AllCaseSpec struct {
 	StringWithoutDescriptionField string `json:"stringWithoutDescriptionField,omitempty"`
 }
 
+// AllCaseStatus represents a AllCase.status
+type AllCaseStatus struct {
+	Conditions []Conditions `json:"conditions,omitempty"`
+}
+
 // ArrayOfObjects represents a AllCase.spec.arrayOfObjects
 type ArrayOfObjects struct {
 	// A string within an object in the array
 	NestedArrayString string `json:"nestedArrayString,omitempty"`
 }
+
 
 // ObjectField represents a AllCase.spec.objectField
 type ObjectField struct {
