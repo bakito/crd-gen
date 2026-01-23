@@ -37,6 +37,7 @@ type StructDef struct {
 	Fields      []FieldDef
 	Description string
 	Root        bool
+	Path        string
 }
 
 // FieldDef represents a field in a Go struct.

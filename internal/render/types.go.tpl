@@ -37,18 +37,19 @@ type {{ .Kind }} struct {
 }
 
 {{ range $_, $struct := .Structs }}
-{{- if ne $struct.Name "Conditions" }}
+{{- if ne $struct.Path "status.conditions" }}
 {{ if $struct.Description }}// {{ $struct.Description  }}{{ end }}
 type {{ $struct.Name }} struct {
 	{{- range $_, $field :=  $struct.Fields }}
 	{{- if $field.Description }}
 	// {{ $field.Description }}
 	{{- end }}
-	{{- if and (eq $struct.Name "Status") (eq $field.Name "Conditions") }}
+	{{- if and (eq $struct.Path "status") (eq $field.Name "Conditions") }}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-    {{- end }}
+    {{- else }}
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
 	{{- end }}
+    {{- end }}
 }
 {{- end }}
 {{ end }}
