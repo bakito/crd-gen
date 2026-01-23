@@ -43,6 +43,12 @@ type {{ $struct.Name }} struct {
 	{{- if $field.Description }}
 	// {{ $field.Description }}
 	{{- end }}
+	{{- if and (eq $struct.Name "Status") (eq $field.Name "Conditions") }}
+    {{- end }}
+	// +optional
+
+	// Required
+
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
 	{{- end }}
 }
