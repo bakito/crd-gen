@@ -214,6 +214,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		cr.Root = structDef
 	} else {
 		cr.Structs[name] = structDef
+		structDef.Path = strings.Join(strings.Split(path, ".")[1:], ".")
 	}
 
 	for _, propName := range slices.Sorted(maps.Keys(schema.Properties)) {
