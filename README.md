@@ -123,3 +123,4 @@ Example of flattening an `ExternalSecret` type from the `external-secrets` proje
 - `--type <names>`: Comma-separated list of struct names to extract.
 - `--out <file>`: Output file path.
 - `--pkg <name>`: Output package name (default: `generated`).
+- `--pointers`: Generate all struct variables as pointers (arrays become arrays of pointers).

@@ -21,6 +21,7 @@ var (
 	typeNames = flag.String("type", "", "Comma-separated list of struct names to extract")
 	outPath   = flag.String("out", "", "Output file path")
 	outPkg    = flag.String("pkg", "generated", "Output package name")
+	pointers  = flag.Bool("pointers", false, "Generate all struct variables as pointers")
 )
 
 // Allowed packages that we don't flatten
@@ -38,6 +39,7 @@ type Extractor struct {
 	imports        map[string]string // Import Path -> Local Name
 	localDecls     []ast.Decl
 	rootPkg        string
+	pointers       bool
 }
 
 type TypeRequest struct {
@@ -89,6 +91,7 @@ func main() {
 		processed:      make(map[string]string),
 		usedLocalNames: make(map[string]bool),
 		imports:        make(map[string]string),
+		pointers:       *pointers,
 	}
 
 	packages.Visit(pkgs, nil, func(p *packages.Package) {
@@ -263,6 +266,23 @@ func copyDoc(doc *ast.CommentGroup) *ast.CommentGroup {
 	return newDoc
 }
 
+func (ex *Extractor) wrap(expr ast.Expr) ast.Expr {
+	if !ex.pointers {
+		return expr
+	}
+	switch e := expr.(type) {
+	case *ast.StarExpr, *ast.ArrayType, *ast.MapType:
+		return expr
+	case *ast.SelectorExpr:
+		if x, ok := e.X.(*ast.Ident); ok && x.Name == "metav1" {
+			if e.Sel.Name == "TypeMeta" || e.Sel.Name == "ObjectMeta" {
+				return expr
+			}
+		}
+	}
+	return &ast.StarExpr{X: expr}
+}
+
 func (ex *Extractor) rewriteType(pkg *packages.Package, expr ast.Expr) ast.Expr {
 	switch t := expr.(type) {
 	case *ast.StructType:
@@ -274,7 +294,7 @@ func (ex *Extractor) rewriteType(pkg *packages.Package, expr ast.Expr) ast.Expr 
 			for _, n := range f.Names {
 				newField.Names = append(newField.Names, ast.NewIdent(n.Name))
 			}
-			newField.Type = ex.rewriteType(pkg, f.Type)
+			newField.Type = ex.wrap(ex.rewriteType(pkg, f.Type))
 			newFields.List = append(newFields.List, newField)
 		}
 		return &ast.StructType{Fields: newFields}
@@ -285,13 +305,13 @@ func (ex *Extractor) rewriteType(pkg *packages.Package, expr ast.Expr) ast.Expr 
 	case *ast.ArrayType:
 		return &ast.ArrayType{
 			Len: t.Len,
-			Elt: ex.rewriteType(pkg, t.Elt),
+			Elt: ex.wrap(ex.rewriteType(pkg, t.Elt)),
 		}
 
 	case *ast.MapType:
 		return &ast.MapType{
-			Key:   ex.rewriteType(pkg, t.Key),
-			Value: ex.rewriteType(pkg, t.Value),
+			Key:   ex.wrap(ex.rewriteType(pkg, t.Key)),
+			Value: ex.wrap(ex.rewriteType(pkg, t.Value)),
 		}
 
 	case *ast.Ident:
