@@ -32,7 +32,6 @@ type AllCase struct {
 	Status AllCaseStatus `json:"status,omitempty"`
 }
 
-
 // AllCaseSpec represents a AllCase.spec
 type AllCaseSpec struct {
 	// An array of objects
@@ -45,6 +44,7 @@ type AllCaseSpec struct {
 	BoolField bool `json:"boolField,omitempty"`
 	// A string field formatted as byte
 	ByteField []byte `json:"byteField,omitempty"`
+	Conditions []Conditions `json:"conditions,omitempty"`
 	// A string field formatted as date-time
 	DateTimeField metav1.Time `json:"dateTimeField,omitempty"`
 	// A number field without explicit format
@@ -88,6 +88,10 @@ type ArrayOfObjects struct {
 	NestedArrayString string `json:"nestedArrayString,omitempty"`
 }
 
+// Conditions represents a AllCase.spec.conditions
+type Conditions struct {
+	Message string `json:"message,omitempty"`
+}
 
 // ObjectField represents a AllCase.spec.objectField
 type ObjectField struct {

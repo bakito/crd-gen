@@ -110,6 +110,13 @@ spec:
                 emptyObjectField:
                   type: object
                   description: "An empty object field without properties"
+                conditions:
+                  items:
+                    properties:
+                      message:
+                        type: string
+                    type: object
+                  type: array
             status:
               properties:
                 conditions:
