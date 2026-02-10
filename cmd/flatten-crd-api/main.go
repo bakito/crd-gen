@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -24,7 +25,7 @@ var (
 	pointers  = flag.Bool("pointers", false, "Generate all struct variables as pointers")
 )
 
-// Allowed packages that we don't flatten
+// Allowed packages that we don't flatten.
 var allowedPkgs = map[string]string{
 	"k8s.io/apimachinery/pkg/apis/meta/v1": "metav1",
 	"time":                                 "time",
@@ -63,7 +64,8 @@ func main() {
 	pkgs, err := packages.Load(cfg, *srcPkg)
 
 	// If it fails because the module is missing, try fetching it in a temp directory
-	if err != nil || len(pkgs) == 0 || pkgs[0].Name == "" || (len(pkgs) > 0 && len(pkgs[0].Errors) > 0 && strings.Contains(pkgs[0].Errors[0].Msg, "no required module provides")) {
+	if err != nil || len(pkgs) == 0 || pkgs[0].Name == "" ||
+		(len(pkgs) > 0 && len(pkgs[0].Errors) > 0 && strings.Contains(pkgs[0].Errors[0].Msg, "no required module provides")) {
 		log.Printf("Package not found in current module. Attempting to fetch %s in a temporary workspace...", *srcPkg)
 		tempDir, err := os.MkdirTemp("", "crd-extractor-*")
 		if err != nil {
@@ -71,13 +73,17 @@ func main() {
 		}
 		defer os.RemoveAll(tempDir)
 
+		ctx := context.TODO()
+
 		// Initialize a temporary module
-		runCmd(tempDir, "go", "mod", "init", "temp-extract")
-		runCmd(tempDir, "go", "get", *srcPkg)
+		runCmd(ctx, tempDir, "go", "mod", "init", "temp-extract")
+		runCmd(ctx, tempDir, "go", "get", *srcPkg)
 
 		cfg.Dir = tempDir
 		pkgs, err = packages.Load(cfg, *srcPkg)
 		if err != nil {
+			_ = os.RemoveAll(tempDir)
+			//nolint:gocritic // RemoveAll will also be called before log fatal
 			log.Fatalf("Failed to load package after fetch: %v", err)
 		}
 	}
@@ -117,8 +123,8 @@ func main() {
 	ex.generate()
 }
 
-func runCmd(dir string, name string, args ...string) {
-	cmd := exec.Command(name, args...)
+func runCmd(ctx context.Context, dir, name string, args ...string) {
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -461,7 +467,7 @@ func (ex *Extractor) generate() {
 	for path, alias := range ex.imports {
 		importSpecs = append(importSpecs, &ast.ImportSpec{
 			Name: ast.NewIdent(alias),
-			Path: &ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", path)},
+			Path: &ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("%q", path)},
 		})
 	}
 	if len(importSpecs) > 0 {
@@ -489,7 +495,7 @@ func (ex *Extractor) generate() {
 		src = buf.Bytes()
 	}
 
-	if err := os.WriteFile(*outPath, src, 0644); err != nil {
+	if err := os.WriteFile(*outPath, src, 0o644); err != nil {
 		log.Fatalf("Failed to write output: %v", err)
 	}
 }
