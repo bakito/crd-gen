@@ -350,6 +350,12 @@ func (r *CustomResources) generateStructProperty(
 	if ft, ok := r.structHashes[hash]; ok {
 		fieldType = ft
 	} else {
+		// Check if the current property is a metav1.Condition
+		if isMetav1Condition(prop) {
+			cr.Imports[`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`] = true
+			return "metav1.Condition"
+		}
+
 		uniqFieldName := r.newUniqFieldName(cr, fieldName, root, path)
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
@@ -388,6 +394,52 @@ func extractSchemas(
 	}
 
 	return nil, "", fmt.Errorf("could not find desired version %q in CRD", desiredVersion)
+}
+
+func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
+	if schema == nil || schema.Type != "object" || schema.Properties == nil {
+		return false
+	}
+
+	requiredProps := map[string]struct {
+		Type   string
+		Format string
+		Enum   []string
+	}{
+		"type":               {Type: "string"},
+		"status":             {Type: "string", Enum: []string{"True", "False", "Unknown"}},
+		"reason":             {Type: "string"},
+		"message":            {Type: "string"},
+		"lastTransitionTime": {Type: "string", Format: "date-time"},
+	}
+
+	for propName, expected := range requiredProps {
+		prop, ok := schema.Properties[propName]
+		if !ok || prop.Type != expected.Type {
+			return false
+		}
+		if expected.Format != "" && prop.Format != expected.Format {
+			return false
+		}
+		if len(expected.Enum) > 0 {
+			if len(prop.Enum) != len(expected.Enum) {
+				return false
+			}
+			for _, enumVal := range expected.Enum {
+				found := false
+				for _, pEnumVal := range prop.Enum {
+					if string(pEnumVal.Raw) == `"`+enumVal+`"` {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
 
 // Helper function to map OpenAPI types to Go types.
@@ -443,6 +495,10 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 		}
 		return "[]any"
 	case "object":
+		if isMetav1Condition(&prop) {
+			cr.Imports[`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`] = true
+			return "metav1.Condition"
+		}
 		// We don't need to mark this for later replacement since we'll handle object types
 		// directly in the generateStructs function
 		return "map[string]any"
