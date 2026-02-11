@@ -16,18 +16,8 @@ test-ci:
 
 generate-ci:
 	rm -Rf tmp/apis
-	go run ./cmd/extract-crd-api/main.go --module "github.com/upbound/provider-vault@v2.1.1" \
-	  --use-git --clear --path apis/vault/v1alpha1 \
-	  --target tmp/apis/vault \
-	  --exclude .*\.managed.go \
-	  --exclude .*\.managedlist.go \
-	  --exclude .*_terraformed.go \
-	  --exclude .*\.conversion_hubs.go \
-	  --exclude .*\.resolvers.go
 	go run ./cmd/generate-crd-api \
 	  --target tmp/apis --pointer \
-	  --crd testdata/external-secrets.io_clustersecretstores.yaml
-	go tool controller-gen object paths=./tmp/apis/v1
-
+	  --crd testdata/capsule.clastix.io_tenants.yaml
 generate: generate-ci
 	rm -Rf tmp/apis

@@ -40,7 +40,7 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 		},
 		{
 			name: "single_crd",
-			args: []string{"--crd", filepath.Join(testdata, "tenants.capsule.clastix.io.yaml")},
+			args: []string{"--crd", filepath.Join(testdata, "capsule.clastix.io_tenants.yaml")},
 			expectedFiles: []string{
 				"v1beta2/group_version_info.go",
 				"v1beta2/types_tenant.go",
@@ -71,7 +71,7 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 		{
 			name: "multiple_crds_different_group",
 			args: []string{
-				"--crd", filepath.Join(testdata, "tenants.capsule.clastix.io.yaml"),
+				"--crd", filepath.Join(testdata, "capsule.clastix.io_tenants.yaml"),
 				"--crd", filepath.Join(testdata, "applications.argoproj.io.yaml"),
 			},
 			wantErrMsg: "failed to parse CRDs",
@@ -79,7 +79,7 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 		{
 			name: "with_version_not_storage",
 			args: []string{
-				"--crd", filepath.Join(testdata, "tenants.capsule.clastix.io.yaml"),
+				"--crd", filepath.Join(testdata, "capsule.clastix.io_tenants.yaml"),
 				"--version", "v1beta1",
 			},
 			wantErrMsg: `failed to parse CRDs`,
@@ -87,7 +87,7 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 		{
 			name: "with_pointers",
 			args: []string{
-				"--crd", filepath.Join(testdata, "tenants.capsule.clastix.io.yaml"),
+				"--crd", filepath.Join(testdata, "capsule.clastix.io_tenants.yaml"),
 				"--pointer",
 			},
 			expectedFiles: []string{
