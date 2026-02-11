@@ -350,6 +350,12 @@ func (r *CustomResources) generateStructProperty(
 	if ft, ok := r.structHashes[hash]; ok {
 		fieldType = ft
 	} else {
+		// Check if the current property is a metav1.Condition
+		if isMetav1Condition(prop) {
+			cr.Imports[`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`] = true
+			return "metav1.Condition"
+		}
+
 		uniqFieldName := r.newUniqFieldName(cr, fieldName, root, path)
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
@@ -388,6 +394,89 @@ func extractSchemas(
 	}
 
 	return nil, "", fmt.Errorf("could not find desired version %q in CRD", desiredVersion)
+}
+
+func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
+	if schema == nil || schema.Type != "object" || schema.Properties == nil {
+		return false
+	}
+
+	mandatoryPropertyNames := map[string]bool{
+		"type":               true,
+		"status":             true,
+		"lastTransitionTime": true,
+		"reason":             true,
+		"message":            true,
+	}
+
+	expectedPropertySchemas := map[string]struct {
+		Type   string
+		Format string
+		Enum   []string
+	}{
+		"type":               {Type: "string"},
+		"status":             {Type: "string", Enum: []string{"True", "False", "Unknown"}},
+		"reason":             {Type: "string"},
+		"message":            {Type: "string"},
+		"lastTransitionTime": {Type: "string", Format: "date-time"},
+		"observedGeneration": {Type: "integer", Format: "int64"}, // Optional field
+	}
+
+	// 1. Check schema.Required
+	if len(schema.Required) != len(mandatoryPropertyNames) {
+		return false
+	}
+	for _, reqProp := range schema.Required {
+		if _, ok := mandatoryPropertyNames[reqProp]; !ok {
+			return false
+		}
+	}
+
+	// 2. Check all properties in schema.Properties
+	if len(schema.Properties) > len(expectedPropertySchemas) {
+		return false // Schema has more properties than expected
+	}
+
+	for propName, prop := range schema.Properties {
+		expected, ok := expectedPropertySchemas[propName]
+		if !ok {
+			return false // Unexpected property found
+		}
+
+		if prop.Type != expected.Type {
+			return false
+		}
+		if expected.Format != "" && prop.Format != expected.Format {
+			return false
+		}
+		if len(expected.Enum) > 0 {
+			if len(prop.Enum) != len(expected.Enum) {
+				return false
+			}
+			for _, enumVal := range expected.Enum {
+				found := false
+				for _, pEnumVal := range prop.Enum {
+					if string(pEnumVal.Raw) == `"`+enumVal+`"` {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return false
+				}
+			}
+		}
+	}
+
+	// Ensure all mandatory properties are present and correctly typed
+	for mandatoryPropName := range mandatoryPropertyNames {
+		if _, ok := schema.Properties[mandatoryPropName]; !ok {
+			return false // Mandatory property not found
+		}
+		// Type and format checks are already done in the loop above
+	}
+
+	return true
 }
 
 // Helper function to map OpenAPI types to Go types.
@@ -443,6 +532,10 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 		}
 		return "[]any"
 	case "object":
+		if isMetav1Condition(&prop) {
+			cr.Imports[`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`] = true
+			return "metav1.Condition"
+		}
 		// We don't need to mark this for later replacement since we'll handle object types
 		// directly in the generateStructs function
 		return "map[string]any"
