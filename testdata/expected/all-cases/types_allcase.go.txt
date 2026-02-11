@@ -101,6 +101,7 @@ type ObjectField struct {
 	NestedString string `json:"nestedString,omitempty"`
 }
 
+
 // EnumField represents an enumeration for EnumField
 type EnumField string
 
