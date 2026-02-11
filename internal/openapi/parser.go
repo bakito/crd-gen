@@ -401,7 +401,15 @@ func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
 		return false
 	}
 
-	requiredProps := map[string]struct {
+	mandatoryPropertyNames := map[string]bool{
+		"type":               true,
+		"status":             true,
+		"lastTransitionTime": true,
+		"reason":             true,
+		"message":            true,
+	}
+
+	expectedPropertySchemas := map[string]struct {
 		Type   string
 		Format string
 		Enum   []string
@@ -411,11 +419,31 @@ func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
 		"reason":             {Type: "string"},
 		"message":            {Type: "string"},
 		"lastTransitionTime": {Type: "string", Format: "date-time"},
+		"observedGeneration": {Type: "integer", Format: "int64"}, // Optional field
 	}
 
-	for propName, expected := range requiredProps {
-		prop, ok := schema.Properties[propName]
-		if !ok || prop.Type != expected.Type {
+	// 1. Check schema.Required
+	if len(schema.Required) != len(mandatoryPropertyNames) {
+		return false
+	}
+	for _, reqProp := range schema.Required {
+		if _, ok := mandatoryPropertyNames[reqProp]; !ok {
+			return false
+		}
+	}
+
+	// 2. Check all properties in schema.Properties
+	if len(schema.Properties) > len(expectedPropertySchemas) {
+		return false // Schema has more properties than expected
+	}
+
+	for propName, prop := range schema.Properties {
+		expected, ok := expectedPropertySchemas[propName]
+		if !ok {
+			return false // Unexpected property found
+		}
+
+		if prop.Type != expected.Type {
 			return false
 		}
 		if expected.Format != "" && prop.Format != expected.Format {
@@ -439,6 +467,15 @@ func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
 			}
 		}
 	}
+
+	// Ensure all mandatory properties are present and correctly typed
+	for mandatoryPropName := range mandatoryPropertyNames {
+		if _, ok := schema.Properties[mandatoryPropName]; !ok {
+			return false // Mandatory property not found
+		}
+		// Type and format checks are already done in the loop above
+	}
+
 	return true
 }
 
