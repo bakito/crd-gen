@@ -36,9 +36,7 @@ type {{ .Kind }} struct {
 	{{- end }}
 }
 
-{{- range $_, $struct := .Structs }}
-{{- if ne $struct.Path "status.conditions" }}
-{{ if $struct.Description }}// {{ $struct.Description  }}{{ end }}
+{{ range $_, $struct := .Structs }}{{ if $struct.Description }}// {{ $struct.Description  }}{{ end }}
 type {{ $struct.Name }} struct {
 	{{- range $_, $field :=  $struct.Fields }}
 	{{- if $field.Description }}
@@ -50,7 +48,7 @@ type {{ $struct.Name }} struct {
 	{{ $field.Name }} {{ $field.Type }} `json:"{{ $field.JSONTag }},omitempty"`
     {{- end }}
 }
-{{- end }}
+
 {{ end }}
 
 {{- range $_, $struct := .Structs }}

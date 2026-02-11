@@ -79,7 +79,7 @@ type AllCaseSpec struct {
 // AllCaseStatus represents a AllCase.status
 type AllCaseStatus struct {
 	// +deepequal-gen=false
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions []*metav1.Condition `json:"conditions,omitempty"`
 }
 
 // ArrayOfObjects represents a AllCase.spec.arrayOfObjects
@@ -100,6 +100,7 @@ type ObjectField struct {
 	// A string within the nested object
 	NestedString *string `json:"nestedString,omitempty"`
 }
+
 
 // EnumField represents an enumeration for EnumField
 type EnumField string

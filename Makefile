@@ -28,5 +28,8 @@ generate-ci:
 	  --target tmp/apis --pointer \
 		  --crd testdata/capsule.clastix.io_tenants.yaml
 	go tool controller-gen object paths=./tmp/apis/v1beta2
+	go run ./cmd/generate-crd-api \
+	  --target tmp/argocd --pointer \
+		  --crd testdata/applications.argoproj.io.yaml
 generate: generate-ci
 	rm -Rf tmp/apis
