@@ -57,11 +57,13 @@ func Parse(
 		for i, item := range res.Items {
 			for s, def := range item.Structs {
 				for f, field := range def.Fields {
-					if strings.Contains(field.Type, "]") {
-						// handle slice and maps
-						res.Items[i].Structs[s].Fields[f].Type = strings.Replace(field.Type, "]", "]*", 1)
-					} else {
-						res.Items[i].Structs[s].Fields[f].Type = "*" + field.Type
+					if !field.NoPointer {
+						if strings.Contains(field.Type, "]") {
+							// handle slice and maps
+							res.Items[i].Structs[s].Fields[f].Type = strings.Replace(field.Type, "]", "]*", 1)
+						} else {
+							res.Items[i].Structs[s].Fields[f].Type = "*" + field.Type
+						}
 					}
 				}
 			}
@@ -221,10 +223,14 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		prop := schema.Properties[propName]
 		fieldName := ToCamelCase(propName)
 		var fieldType string
-		var noDeepEqual bool
+		field := FieldDef{
+			Name:        fieldName,
+			JSONTag:     propName,
+			Description: prop.Description,
+		}
 
 		if prop.Type != "" { //nolint:gocritic
-			fieldType, noDeepEqual = mapType(prop, cr)
+			fieldType = mapType(&field, prop, cr)
 
 			// Handle nested objects by creating a new struct
 			switch prop.Type {
@@ -234,7 +240,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 				} else {
 					switch {
 					case prop.AdditionalProperties != nil && prop.AdditionalProperties.Schema != nil:
-						additional, _ := mapType(*prop.AdditionalProperties.Schema, cr)
+						additional := mapType(&field, *prop.AdditionalProperties.Schema, cr)
 						if additional == "map[string]any" {
 							additional = r.generateStructProperty(
 								cr,
@@ -258,7 +264,7 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 					fieldType = "[]" + r.generateStructProperty(cr, prop.Items.Schema, fieldName, path, propName, root)
 				}
 			default:
-				fieldType, noDeepEqual = mapType(prop, cr)
+				fieldType = mapType(&field, prop, cr)
 			}
 		} else if prop.Ref != nil {
 			// Handle references
@@ -270,13 +276,6 @@ func (r *CustomResources) generateStructs(schema *apiv1.JSONSchemaProps, cr *Cus
 		} else {
 			fieldType = "apiextensionsv1.JSON"
 			cr.Imports[`apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"`] = true
-		}
-
-		field := FieldDef{
-			Name:          fieldName,
-			JSONTag:       propName,
-			Description:   prop.Description,
-			SkipDeepEqual: noDeepEqual,
 		}
 
 		if prop.Items != nil && len(prop.Items.Schema.Enum) > 0 {
@@ -304,7 +303,7 @@ func (r *CustomResources) generateEnumStruct(
 	} else {
 		uniqFieldName := r.newUniqFieldName(cr, fieldName, false, path)
 		field.Enums = generateEnum(prop, uniqFieldName)
-		field.EnumType, _ = mapType(*prop, cr)
+		field.EnumType = mapType(field, *prop, cr)
 		field.EnumName = uniqFieldName
 		fieldType = uniqFieldName
 		r.structHashes[hash] = uniqFieldName
@@ -428,17 +427,17 @@ func isMetav1Condition(schema *apiv1.JSONSchemaProps) bool {
 }
 
 // Helper function to map OpenAPI types to Go types.
-func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) (string, bool) {
+func mapType(field *FieldDef, prop apiv1.JSONSchemaProps, cr *CustomResource) string {
 	if prop.Type == "" {
 		if prop.Ref != nil {
 			parts := strings.Split(*prop.Ref, "/")
-			return ToCamelCase(parts[len(parts)-1]), false
+			return ToCamelCase(parts[len(parts)-1])
 		}
 		if prop.XIntOrString {
 			cr.Imports[`"k8s.io/apimachinery/pkg/util/intstr"`] = true
-			return "intstr.IntOrString", false
+			return "intstr.IntOrString"
 		}
-		return "any", false
+		return "any"
 	}
 
 	switch prop.Type {
@@ -446,50 +445,52 @@ func mapType(prop apiv1.JSONSchemaProps, cr *CustomResource) (string, bool) {
 		if prop.Format != "" {
 			switch prop.Format {
 			case "date-time":
-				return "metav1.Time", false
+				return "metav1.Time"
 			case "byte", "binary":
-				return "[]byte", false
+				return "[]byte"
 			default:
 			}
 		}
-		return "string", false
+		return "string"
 	case "integer", "number":
 		if prop.Format != "" {
 			switch prop.Format {
 			case "int32":
-				return "int32", false
+				return "int32"
 			case "int64":
-				return "int64", false
+				return "int64"
 			case "float":
-				return "float32", false
+				return "float32"
 			case "double":
-				return "float64", false
+				return "float64"
 			default:
 			}
 		}
 		if prop.Type == "integer" {
-			return "int64", false
+			return "int64"
 		}
-		return "float64", false
+		return "float64"
 	case "boolean":
-		return "bool", false
+		return "bool"
 	case "array":
 		if prop.Items != nil && prop.Items.Schema != nil {
-			itemType, noDeepEqual := mapType(*prop.Items.Schema, cr)
-			return "[]" + itemType, noDeepEqual
+			itemType := mapType(field, *prop.Items.Schema, cr)
+			return "[]" + itemType
 		}
-		return "[]any", false
+		return "[]any"
 	case "object":
 		if isMetav1Condition(&prop) {
 			cr.Imports[`metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"`] = true
 
-			return "metav1.Condition", true
+			field.SkipDeepEqual = true
+			field.NoPointer = true
+			return "metav1.Condition"
 		}
 		// We don't need to mark this for later replacement since we'll handle object types
 		// directly in the generateStructs function
-		return "map[string]any", false
+		return "map[string]any"
 	default:
-		return "any", false
+		return "any"
 	}
 }
 

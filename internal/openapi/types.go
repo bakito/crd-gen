@@ -50,6 +50,7 @@ type FieldDef struct {
 	EnumName      string
 	EnumType      string
 	SkipDeepEqual bool
+	NoPointer     bool
 }
 
 type EnumDef struct {
