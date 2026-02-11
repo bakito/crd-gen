@@ -42,13 +42,14 @@ type StructDef struct {
 
 // FieldDef represents a field in a Go struct.
 type FieldDef struct {
-	Name        string
-	Type        string
-	JSONTag     string
-	Description string
-	Enums       []EnumDef
-	EnumName    string
-	EnumType    string
+	Name          string
+	Type          string
+	JSONTag       string
+	Description   string
+	Enums         []EnumDef
+	EnumName      string
+	EnumType      string
+	SkipDeepEqual bool
 }
 
 type EnumDef struct {
