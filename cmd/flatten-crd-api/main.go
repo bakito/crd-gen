@@ -316,7 +316,7 @@ func (ex *Extractor) rewriteType(pkg *packages.Package, expr ast.Expr) ast.Expr 
 
 	case *ast.MapType:
 		return &ast.MapType{
-			Key:   ex.wrap(ex.rewriteType(pkg, t.Key)),
+			Key:   ex.rewriteType(pkg, t.Key),
 			Value: ex.wrap(ex.rewriteType(pkg, t.Value)),
 		}
 
