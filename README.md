@@ -1,11 +1,12 @@
 # crd-gen
 
-This repository provides two powerful tools for working with Kubernetes Custom Resource Definitions (CRDs):
+This repository provides three powerful tools for working with Kubernetes Custom Resource Definitions (CRDs):
 
 - [`generate-crd-api`](./cmd/generate-crd-api): Generate Go API types from CRD YAML files.
 - [`extract-crd-api`](./cmd/extract-crd-api): Extract Go API types from existing modules for selected CRDs.
+- [`flatten-crd-api`](./cmd/flatten-crd-api): Flatten Go API types by extracting specific types and their dependencies into a single file.
 
-Below you’ll find documentation and usage examples for both tools.
+Below you’ll find documentation and usage examples for these tools.
 
 ---
 
@@ -86,3 +87,40 @@ Use `go generate` to invoke the tool and extract API types from modules.
 - `--exclude <pattern>`: Regex pattern for files to exclude.
 
 ---
+
+## flatten-crd-api
+
+### Purpose
+
+`flatten-crd-api` extracts specific Go types and their internal dependencies from a package and flattens them into a single Go file. It preserves references to standard library types and Kubernetes `metav1` types while bringing all other required struct definitions into the output file. This is particularly useful for creating lightweight, self-contained versions of complex API types.
+
+### Installation
+
+Requires **Go 1.24+**.
+
+```bash
+go get -tool github.com/bakito/crd-gen/cmd/flatten-crd-api@latest
+```
+
+### Usage
+
+Example of flattening an `ExternalSecret` type from the `external-secrets` project:
+
+```go
+//go:build generate
+// +build generate
+
+//go:generate go tool flatten-crd-api \
+    --src github.com/external-secrets/external-secrets/apis/externalsecrets/v1beta1 \
+    --type ExternalSecret \
+    --out ./apis/externalsecrets/v1beta1/zz_generated.flattened.go \
+    --pkg v1beta1
+```
+
+#### Flags
+
+- `--src <path>`: Source package path or file.
+- `--type <names>`: Comma-separated list of struct names to extract.
+- `--out <file>`: Output file path.
+- `--pkg <name>`: Output package name (default: `generated`).
+- `--pointers`: Generate all struct variables as pointers (arrays become arrays of pointers).
