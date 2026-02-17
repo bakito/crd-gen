@@ -16,7 +16,7 @@ TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
 
 ## Tool Versions
 # renovate: packageName=github.com/golangci/golangci-lint/v2
-TB_GOLANGCI_LINT_VERSION ?= v2.9.0
+TB_GOLANGCI_LINT_VERSION ?= v2.10.1
 TB_GOLANGCI_LINT_VERSION_NUM ?= $(call STRIP_V,$(TB_GOLANGCI_LINT_VERSION))
 
 ## Tool Installer
