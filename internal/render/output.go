@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -141,8 +140,8 @@ func generateTypesCode(cr *openapi.CustomResource, group, version string) (strin
 func prepare(structDef *openapi.StructDef) {
 	structDef.Description = prepareDescription(structDef.Description, false)
 
-	sort.Slice(structDef.Fields, func(i, j int) bool {
-		return structDef.Fields[i].Name < structDef.Fields[j].Name
+	slices.SortFunc(structDef.Fields, func(a, b openapi.FieldDef) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	for i, f := range structDef.Fields {
