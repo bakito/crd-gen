@@ -7,6 +7,6 @@ import (
 
 var (
 	// verifies that all required dependencies for the application are correctly set up and available.
-	_ = scheme.Builder{}
+	_ = scheme.Builder{} //nolint:staticcheck
 	_ = schema.GroupVersion{}
 )
