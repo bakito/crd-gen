@@ -108,7 +108,7 @@ func generateTypesCode(cr *openapi.CustomResource, group, version string) (strin
 	// keep only spec and status
 	var rootFields []openapi.FieldDef
 	for _, field := range cr.Root.Fields {
-		if field.JSONTag == "spec" || field.JSONTag == "status" {
+		if field.JSONTag != "apiVersion" && field.JSONTag != "kind" && field.JSONTag != "metadata" {
 			rootFields = append(rootFields, field)
 		}
 	}
