@@ -182,7 +182,9 @@ func (r *CustomResources) parseCRD(crdData []byte, desiredVersion string) (*Cust
 	if err != nil {
 		return nil, err
 	}
-	// Extract CRD info
+	// Apply the same defaulting the Kubernetes API server does so an unset
+	// listKind defaults to <Kind>List.
+	apiv1.SetObjectDefaults_CustomResourceDefinition(&crd)
 
 	// Extract schema
 	schema, version, err := extractSchemas(crd, desiredVersion)
