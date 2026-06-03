@@ -106,6 +106,23 @@ func TestGenerateCrdApiE2E(t *testing.T) {
 			wantErrMsg: "failed to parse CRDs",
 		},
 		{
+			name: "missing_list_kind_defaults_to_kind_list",
+			args: []string{"--crd", filepath.Join(testdata, "no-listkind.testing.crd-gen.yaml")},
+			expectedFiles: []string{
+				"v1/group_version_info.go",
+				"v1/types_nolistkind.go",
+			},
+			fileContentChecks: map[string][]string{
+				"v1/types_nolistkind.go": {
+					"type NoListKind struct {",
+					"type NoListKindList struct {",
+				},
+				"v1/group_version_info.go": {
+					"SchemeBuilder.Register(&NoListKind{}, &NoListKindList{})",
+				},
+			},
+		},
+		{
 			name: "all_cases",
 			args: []string{"--crd", filepath.Join(testdata, "all-cases.testing.crd-gen.yaml")},
 			expectedFileGolden: map[string]string{
