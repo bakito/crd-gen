@@ -165,7 +165,7 @@ linters:
         - name: unhandled-error
           arguments:
             - '^fmt\.(Fp|P)?rint(f|ln)?$'
-            - '^(bytes\.Buffer|string\.Writer|strings\.Builder)\.Write(Byte|Rune|String)?$'
+            - '^(bytes\.Buffer|string\.Writer|strings\.Builder|os\.File)\.Write(Byte|Rune|String)?$'
         - name: enforce-switch-style
           disabled: true
     staticcheck:
