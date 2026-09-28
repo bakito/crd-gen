@@ -160,12 +160,13 @@ func prepareDescription(desc string, field bool) string {
 func generateGroupVersionInfoCode(res *openapi.CustomResources) (string, error) {
 	var sb strings.Builder
 	t := template.Must(template.New("group_version_into.go.tpl").Parse(gviTpl))
-	if err := t.Execute(&sb, map[string]any{
+	err := t.Execute(&sb, map[string]any{
 		"AppName":  myName,
 		"Version":  res.Version,
 		"Group":    res.Group,
 		"CRDNames": res.Names,
-	}); err != nil {
+	})
+	if err != nil {
 		return "", err
 	}
 
